@@ -20,8 +20,6 @@
 #include <iostream>
 #include <bitcoin/server.hpp>
 
-BC_USE_LIBBITCOIN_MAIN
-
 /**
  * Invoke this program with the raw arguments provided on the command line.
  * All console input and output streams for the application originate here.
@@ -29,9 +27,8 @@ BC_USE_LIBBITCOIN_MAIN
  * @param argv  The array of arguments, including the process.
  * @return      The numeric result to return via console exit.
  */
-int bc::main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
-    bc::set_utf8_stdio();
     return bc::server::dispatch(argc, const_cast<const char**>(argv),
-        bc::cin, bc::cout, bc::cerr);
+        std::cin, std::cout, std::cerr);
 }
