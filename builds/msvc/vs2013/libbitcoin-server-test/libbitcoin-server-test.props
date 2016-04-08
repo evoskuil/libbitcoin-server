@@ -29,6 +29,11 @@
   <!-- Extensions -->
   
   <ImportGroup Label="PropertySheets">
+    <Import Project="$(SolutionDir)libsodium.import.props" />
+    <Import Project="$(SolutionDir)libzmq.import.props" />
+    <Import Project="$(SolutionDir)czmq.import.props" />
+    <Import Project="$(SolutionDir)czmqpp.import.props" />
+    
     <Import Project="$(SolutionDir)libbitcoin.import.props" />
     <Import Project="$(SolutionDir)libbitcoin-consensus.import.props" />
     <Import Project="$(SolutionDir)libbitcoin-blockchain.import.props" />
@@ -38,6 +43,10 @@
 
   <PropertyGroup Condition="'$(DefaultLinkage)' == 'dynamic'">
     <Linkage-secp256k1>dynamic</Linkage-secp256k1>
+    <Linkage-czmqpp>dynamic</Linkage-czmqpp>
+    <Linkage-czmq>dynamic</Linkage-czmq>
+    <Linkage-libzmq>dynamic</Linkage-libzmq>
+    <Linkage-libsodium>dynamic</Linkage-libsodium>
     <Linkage-libbitcoin>dynamic</Linkage-libbitcoin>
     <Linkage-libbitcoin-consensus>dynamic</Linkage-libbitcoin-consensus>
     <Linkage-libbitcoin-blockchain>dynamic</Linkage-libbitcoin-blockchain>
@@ -46,6 +55,10 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(DefaultLinkage)' == 'ltcg'">
     <Linkage-secp256k1>ltcg</Linkage-secp256k1>
+    <Linkage-czmqpp>ltcg</Linkage-czmqpp>
+    <Linkage-czmq>ltcg</Linkage-czmq>
+    <Linkage-libzmq>ltcg</Linkage-libzmq>
+    <Linkage-libsodium>ltcg</Linkage-libsodium>
     <Linkage-libbitcoin>ltcg</Linkage-libbitcoin>
     <Linkage-libbitcoin-consensus>ltcg</Linkage-libbitcoin-consensus>
     <Linkage-libbitcoin-blockchain>ltcg</Linkage-libbitcoin-blockchain>
@@ -54,6 +67,10 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(DefaultLinkage)' == 'static'">
     <Linkage-secp256k1>static</Linkage-secp256k1>
+    <Linkage-czmqpp>static</Linkage-czmqpp>
+    <Linkage-czmq>static</Linkage-czmq>
+    <Linkage-libzmq>static</Linkage-libzmq>
+    <Linkage-libsodium>static</Linkage-libsodium>
     <Linkage-libbitcoin>static</Linkage-libbitcoin>
     <Linkage-libbitcoin-consensus>static</Linkage-libbitcoin-consensus>
     <Linkage-libbitcoin-blockchain>static</Linkage-libbitcoin-blockchain>

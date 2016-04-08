@@ -25,6 +25,11 @@
   <!-- Dependencies -->
 
   <ImportGroup Label="PropertySheets">
+    <Import Project="$(SolutionDir)libsodium.import.props" />
+    <Import Project="$(SolutionDir)libzmq.import.props" />
+    <Import Project="$(SolutionDir)czmq.import.props" />
+    <Import Project="$(SolutionDir)czmqpp.import.props" />
+    
     <Import Project="$(SolutionDir)libbitcoin.import.props" />
     <Import Project="$(SolutionDir)libbitcoin-consensus.import.props" />
     <Import Project="$(SolutionDir)libbitcoin-blockchain.import.props" />
