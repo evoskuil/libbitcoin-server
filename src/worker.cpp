@@ -35,11 +35,9 @@ using posix_time::seconds;
 using posix_time::microsec_clock;
 using std::placeholders::_1;
 
-constexpr int zmq_true = 1;
-constexpr int zmq_false = 0;
-constexpr int zmq_fail = -1;
-constexpr int zmq_curve_enabled = zmq_true;
-constexpr int zmq_socket_no_linger = zmq_false;
+static constexpr int zmq_true = 1;
+static constexpr int zmq_false = 0;
+static constexpr int zmq_fail = -1;
 
 auto now = []() { return microsec_clock::universal_time(); };
 
@@ -97,22 +95,22 @@ bool request_worker::start(const settings_type& config)
     // Use config values.
     log_requests_ = config.server.log_requests;
 
-#ifdef _MSC_VER
-    if (log_requests_)
-        log_debug(LOG_SERVICE)
-            << "Authentication logging disabled on Windows.";
-#else
+////#ifdef _MSC_VER
+////    if (log_requests_)
+////        log_debug(LOG_SERVICE)
+////            << "Authentication logging disabled on Windows.";
+////#else
     // This exposes the log stream to non-utf8 text on Windows.
     // TODO: fix zeromq/czmq/czmqpp to be utf8 everywhere.
     if (log_requests_)
         authenticate_.set_verbose(true);
-#endif 
-
-    if (!config.server.whitelists.empty())
-        whitelist(config.server.whitelists);
-
-    if (config.server.certificate_file.empty())
-        socket_.set_zap_domain("global");
+////#endif 
+////
+////    if (!config.server.whitelists.empty())
+////        whitelist(config.server.whitelists);
+////
+////    if (config.server.certificate_file.empty())
+////        socket_.set_zap_domain("global");
 
     if (!enable_crypto(config))
     {
@@ -134,22 +132,22 @@ bool request_worker::start(const settings_type& config)
         << "Bound query service on "
         << config.server.query_endpoint;
 
-    // This binds the heartbeat service.
-    const auto rc = heartbeat_socket_.bind(
-        config.server.heartbeat_endpoint.to_string());
-    if (rc == 0)
-    {
-        log_error(LOG_SERVICE)
-            << "Failed to bind heartbeat service on "
-            << config.server.heartbeat_endpoint;
-        return false;
-    }
+    ////// This binds the heartbeat service.
+    ////const auto rc = heartbeat_socket_.bind(
+    ////    config.server.heartbeat_endpoint.to_string());
+    ////if (rc == 0)
+    ////{
+    ////    log_error(LOG_SERVICE)
+    ////        << "Failed to bind heartbeat service on "
+    ////        << config.server.heartbeat_endpoint;
+    ////    return false;
+    ////}
 
-    log_info(LOG_SERVICE)
-        << "Bound heartbeat service on "
-        << config.server.heartbeat_endpoint;
+    ////log_info(LOG_SERVICE)
+    ////    << "Bound heartbeat service on "
+    ////    << config.server.heartbeat_endpoint;
 
-    heartbeat_at_ = now() + heartbeat_interval_;
+    ////heartbeat_at_ = now() + heartbeat_interval_;
     return true;
 }
 
@@ -177,6 +175,7 @@ void request_worker::whitelist(const config::authority::list& addresses)
     }
 }
 
+// hintjens.com/blog:45
 bool request_worker::enable_crypto(const settings_type& config)
 {
     if (config.server.certificate_file.empty())
@@ -185,13 +184,14 @@ bool request_worker::enable_crypto(const settings_type& config)
     std::string client_certs(CURVE_ALLOW_ANY);
     if (!config.server.client_certificates_path.empty())
         client_certs = config.server.client_certificates_path.string();
-
     authenticate_.configure_curve("*", client_certs);
+
     czmqpp::certificate cert(config.server.certificate_file.string());
     if (cert.valid())
     {
+        static constexpr int as_server = zmq_true;
+        socket_.set_curve_server(as_server);
         cert.apply(socket_);
-        socket_.set_curve_server(zmq_curve_enabled);
         return true;
     }
 
@@ -202,14 +202,15 @@ bool request_worker::create_new_socket(const settings_type& config)
 {
     // Not sure what we would use this for, so disabled for now.
     // Set the socket identity name.
-    //if (!config.unique_name.get_host().empty())
-    //    socket_.set_identity(config.unique_name.get_host());
+    ////if (!config.unique_name.get_host().empty())
+    ////    socket_.set_identity(config.unique_name.get_host());
 
     // Connect...
     // Returns port number if connected.
     const auto rc = socket_.bind(config.server.query_endpoint.to_string());
     if (rc != 0)
     {
+        static constexpr int zmq_socket_no_linger = zmq_false;
         socket_.set_linger(zmq_socket_no_linger);
         return true;
     }
