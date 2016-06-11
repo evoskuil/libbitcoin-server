@@ -24,6 +24,7 @@
 #include <bitcoin/bitcoin.hpp>
 #include <bitcoin/server/messages/incoming.hpp>
 #include <bitcoin/server/messages/outgoing.hpp>
+#include <bitcoin/server/messages/route.hpp>
 #include <bitcoin/server/server_node.hpp>
 #include <bitcoin/server/utility/fetch_helpers.hpp>
 
@@ -66,9 +67,7 @@ void address::subscribe(server_node& node, const incoming& request,
         return;
     }
 
-    // TODO: reenable.
-    ////node.subscribe_address(reply_to, prefix_filter, type);
-
+    node.subscribe_address(reply_to, prefix_filter, type);
     handler(outgoing(request, error::success));
 }
 
@@ -103,29 +102,6 @@ bool address::unwrap_subscribe_args(route& reply_to, binary& prefix_filter,
     prefix_filter = binary(bit_length, bytes);
     return true;
 }
-
-////void address::renew(server_node& node, const incoming& request,
-////    send_handler handler)
-////{
-////    route reply_to;
-////    binary prefix_filter;
-////    subscribe_type type;
-////
-////    if (!unwrap_subscribe_args(reply_to, prefix_filter, type, request))
-////    {
-////        handler(outgoing(request, error::bad_stream));
-////        return;
-////    }
-////
-////    node.renew(reply_to, prefix_filter, type);
-////}
-////
-////bool address::unwrap_renew_args(route& reply_to, binary& prefix_filter,
-////    subscribe_type& type, const incoming& request)
-////{
-////    // These are currently isomorphic.
-////    return unwrap_subscribe_args(reply_to, prefix_filter, type, request);
-////}
 
 } // namespace server
 } // namespace libbitcoin

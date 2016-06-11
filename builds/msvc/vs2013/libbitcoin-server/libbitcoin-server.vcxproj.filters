@@ -112,6 +112,9 @@
     <ClInclude Include="..\..\..\..\include\bitcoin\server\workers\notification_worker.hpp">
       <Filter>include\bitcoin\server\workers</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\bitcoin\server\messages\route.hpp">
+      <Filter>include\bitcoin\server\messages</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\server_node.cpp">
@@ -167,6 +170,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\src\workers\notification_worker.cpp">
       <Filter>src\workers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\messages\route.cpp">
+      <Filter>src\messages</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

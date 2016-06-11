@@ -327,7 +327,7 @@ void notification_worker::notify_stealth(uint32_t prefix, uint32_t height,
     stealth_subscriber_->relay(prefix, height, block_hash, tx);
 }
 
-// No sequence is required as penetration is monotonically increasing.
+// No sequence is required as gaps are okay.
 void notification_worker::notify_inventory(uint32_t height,
     const hash_digest& block_hash, const hash_digest& tx_hash)
 {
@@ -345,26 +345,26 @@ void notification_worker::notify_inventory(uint32_t height,
 // Subscribers.
 // ----------------------------------------------------------------------------
 
-/////// Subscribe to address and stealth prefix notifications.
-////void notification_worker::subscribe_address(route& reply_to,
-////    binary& prefix_filter, subscribe_type& type)
-////{
-////    // Provide delegate that binds the above parameters and parameterizes
-////    // the appropriate subscriber args, sending the notification,
-////    // The delegate must connect back to a query notification endpoint.
-////    address_subscriber_->subscribe();
-////    stealth_subscriber_->subscribe();
-////}
-////
-/////// Subscribe to transaction radar notifications.
-////void notification_worker::subscribe_radar(route& reply_to,
-////    hash_digest& tx_hash)
-////{
-////    // Provide delegate that binds the above parameters and parameterizes
-////    // the subsciber args, sending the notification and updating state.
-////    // The delegate must connect back to a query notification endpoint.
-////    inventory_subscriber_->subscribe();
-////}
+/// Subscribe to address and stealth prefix notifications.
+void notification_worker::subscribe_address(route& reply_to,
+    binary& prefix_filter, subscribe_type& type)
+{
+    // Provide delegate that binds the above parameters and parameterizes
+    // the appropriate subscriber args, sending the notification,
+    // The delegate must connect back to a query notification endpoint.
+    address_subscriber_->subscribe();
+    stealth_subscriber_->subscribe();
+}
+
+/// Subscribe to transaction radar notifications.
+void notification_worker::subscribe_radar(route& reply_to,
+    hash_digest& tx_hash)
+{
+    // Provide delegate that binds the above parameters and parameterizes
+    // the subsciber args, sending the notification and updating state.
+    // The delegate must connect back to a query notification endpoint.
+    inventory_subscriber_->subscribe();
+}
 
 
 // reference

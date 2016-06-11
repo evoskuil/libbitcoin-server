@@ -83,12 +83,12 @@ public:
     // Notification.
     // ------------------------------------------------------------------------
 
-    /////// Subscribe to address and stealth prefix notifications.
-    ////virtual void subscribe_address(route& reply_to, binary& prefix_filter,
-    ////    chain::subscribe_type& type);
+    /// Subscribe to address and stealth prefix notifications.
+    virtual void subscribe_address(route& reply_to, binary& prefix_filter,
+        chain::subscribe_type& type);
 
-    /////// Subscribe to transaction radar notifications.
-    ////virtual void subscribe_radar(route& reply_to, hash_digest& tx_hash);
+    /// Subscribe to transaction radar notifications.
+    virtual void subscribe_radar(route& reply_to, hash_digest& tx_hash);
 
 private:
 

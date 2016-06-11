@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <string>
 #include <bitcoin/protocol.hpp>
+#include <bitcoin/server/messages/route.hpp>
 
 namespace libbitcoin {
 namespace server {
@@ -60,14 +61,17 @@ code incoming::receive(zmq::socket& socket, bool secure)
 
     // Client is undelimited DEALER -> 2 addresses with no delimiter.
     // Client is REQ or delimited DEALER -> 2 addresses with delimiter.
-    address1 = message.dequeue_data();
-    address2 = message.dequeue_data();
+    const auto address1 = message.dequeue_data();
+    const auto address2 = message.dequeue_data();
 
     // In the reply we echo the delimited-ness of the original request.
-    delimited = message.size() == 4;
+    const auto delimited = message.size() == 4;
 
     if (delimited)
         message.dequeue();
+
+    route route(secure, delimited);
+    route
 
     // All libbitcoin queries have these three frames.
     //-------------------------------------------------------------------------

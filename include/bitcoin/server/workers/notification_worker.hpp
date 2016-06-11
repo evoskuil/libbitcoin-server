@@ -26,6 +26,7 @@
 #include <bitcoin/server/define.hpp>
 #include <bitcoin/server/messages/incoming.hpp>
 #include <bitcoin/server/messages/outgoing.hpp>
+#include <bitcoin/server/messages/route.hpp>
 #include <bitcoin/server/settings.hpp>
 
 namespace libbitcoin {
@@ -67,12 +68,12 @@ public:
     /// Stop the worker.
     bool stop() override;
 
-    /////// Subscribe to address and stealth prefix notifications.
-    ////virtual void subscribe_address(route& reply_to, binary& prefix_filter,
-    ////    chain::subscribe_type& type);
+    /// Subscribe to address and stealth prefix notifications.
+    virtual void subscribe_address(route& reply_to, binary& prefix_filter,
+        chain::subscribe_type& type);
 
-    /////// Subscribe to address and stealth prefix notifications.
-    ////virtual void subscribe_radar(route& reply_to, hash_digest& tx_hash);
+    /// Subscribe to address and stealth prefix notifications.
+    virtual void subscribe_radar(route& reply_to, hash_digest& tx_hash);
 
 protected:
     typedef bc::protocol::zmq::socket socket;
