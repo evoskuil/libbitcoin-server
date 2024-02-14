@@ -407,12 +407,6 @@ handle_custom_options()
     display_message "REPO_PRESET[libbitcoin-node]=${REPO_PRESET[libbitcoin-node]}"
     REPO_PRESET[libbitcoin-network]="$BASE_PRESET_ID"
     display_message "REPO_PRESET[libbitcoin-network]=${REPO_PRESET[libbitcoin-network]}"
-    if [[ $WITH_BITCOIN_CONSENSUS ]]; then
-        REPO_PRESET[libbitcoin-blockchain]="$BASE_PRESET_ID-with_consensus"
-    else
-        REPO_PRESET[libbitcoin-blockchain]="$BASE_PRESET_ID-without_consensus"
-    fi
-    display_message "REPO_PRESET[libbitcoin-blockchain]=${REPO_PRESET[libbitcoin-blockchain]}"
     REPO_PRESET[libbitcoin-consensus]="$BASE_PRESET_ID"
     display_message "REPO_PRESET[libbitcoin-consensus]=${REPO_PRESET[libbitcoin-consensus]}"
     REPO_PRESET[libbitcoin-database]="$BASE_PRESET_ID"
@@ -1001,9 +995,6 @@ build_all()
     create_from_github libbitcoin libbitcoin-consensus master "$WITH_BITCOIN_CONSENSUS"
     display_message "libbitcoin-consensus PRESET ${REPO_PRESET[libbitcoin-consensus]}"
     build_from_github_cmake libbitcoin-consensus ${REPO_PRESET[libbitcoin-consensus]} "$PARALLEL" false "$WITH_BITCOIN_CONSENSUS" "${BITCOIN_CONSENSUS_OPTIONS[@]}" $CUMULATIVE_FILTERED_ARGS_CMAKE "$@"
-    create_from_github libbitcoin libbitcoin-blockchain master "yes"
-    display_message "libbitcoin-blockchain PRESET ${REPO_PRESET[libbitcoin-blockchain]}"
-    build_from_github_cmake libbitcoin-blockchain ${REPO_PRESET[libbitcoin-blockchain]} "$PARALLEL" false "yes" "${BITCOIN_BLOCKCHAIN_OPTIONS[@]}" $CUMULATIVE_FILTERED_ARGS_CMAKE "$@"
     create_from_github libbitcoin libbitcoin-node master "yes"
     display_message "libbitcoin-node PRESET ${REPO_PRESET[libbitcoin-node]}"
     build_from_github_cmake libbitcoin-node ${REPO_PRESET[libbitcoin-node]} "$PARALLEL" false "yes" "${BITCOIN_NODE_OPTIONS[@]}" $CUMULATIVE_FILTERED_ARGS_CMAKE "$@"
@@ -1108,14 +1099,6 @@ BITCOIN_DATABASE_OPTIONS=(
 #------------------------------------------------------------------------------
 BITCOIN_CONSENSUS_OPTIONS=(
 "-Dwith-tests=no" \
-"${with_boost}" \
-"${with_pkgconfigdir}")
-
-# Define bitcoin-blockchain options.
-#------------------------------------------------------------------------------
-BITCOIN_BLOCKCHAIN_OPTIONS=(
-"-Dwith-tests=no" \
-"-Dwith-tools=no" \
 "${with_boost}" \
 "${with_pkgconfigdir}")
 

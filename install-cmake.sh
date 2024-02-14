@@ -936,8 +936,6 @@ build_all()
     build_from_github_cmake libbitcoin-database "$PARALLEL" false "yes" "${BITCOIN_DATABASE_OPTIONS[@]}" $CUMULATIVE_FILTERED_ARGS_CMAKE "$@"
     create_from_github libbitcoin libbitcoin-consensus master "$WITH_BITCOIN_CONSENSUS"
     build_from_github_cmake libbitcoin-consensus "$PARALLEL" false "$WITH_BITCOIN_CONSENSUS" "${BITCOIN_CONSENSUS_OPTIONS[@]}" $CUMULATIVE_FILTERED_ARGS_CMAKE "$@"
-    create_from_github libbitcoin libbitcoin-blockchain master "yes"
-    build_from_github_cmake libbitcoin-blockchain "$PARALLEL" false "yes" "${BITCOIN_BLOCKCHAIN_OPTIONS[@]}" $CUMULATIVE_FILTERED_ARGS_CMAKE "$@"
     create_from_github libbitcoin libbitcoin-node master "yes"
     build_from_github_cmake libbitcoin-node "$PARALLEL" false "yes" "${BITCOIN_NODE_OPTIONS[@]}" $CUMULATIVE_FILTERED_ARGS_CMAKE "$@"
     unpack_from_tarball "$ZMQ_ARCHIVE" "$ZMQ_URL" gzip "$BUILD_ZMQ"
@@ -1038,14 +1036,6 @@ BITCOIN_DATABASE_OPTIONS=(
 #------------------------------------------------------------------------------
 BITCOIN_CONSENSUS_OPTIONS=(
 "-Dwith-tests=no" \
-"${with_boost}" \
-"${with_pkgconfigdir}")
-
-# Define bitcoin-blockchain options.
-#------------------------------------------------------------------------------
-BITCOIN_BLOCKCHAIN_OPTIONS=(
-"-Dwith-tests=no" \
-"-Dwith-tools=no" \
 "${with_boost}" \
 "${with_pkgconfigdir}")
 
