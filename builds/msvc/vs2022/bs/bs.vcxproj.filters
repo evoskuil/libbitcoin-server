@@ -119,4 +119,8 @@
       <Filter>resource</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\libbitcoin.ico" />
+    <Image Include="..\..\..\..\console\libbitcoin.ico" />
+  </ItemGroup>
 </Project>

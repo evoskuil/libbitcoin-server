@@ -83,28 +83,32 @@ void executor::create_hidden_window()
 {
     thread_ = std::thread([this]()
     {
-        const WNDCLASSW window_class
+        const auto instance = ::GetModuleHandleW(NULL);
+        const WNDCLASSEXW window_class
         {
+            .cbSize = sizeof(WNDCLASSEXW),
+            .style = CS_HREDRAW | CS_VREDRAW,
             .lpfnWndProc = &executor::window_proc,
-            .hInstance = ::GetModuleHandleW(NULL),
-            .lpszClassName = window_name
+            .hInstance = instance,
+            .hIcon = ::LoadIconW(instance, MAKEINTRESOURCEW(101)),
+            .lpszClassName = window_name,
+            .hIconSm = ::LoadIconW(instance, MAKEINTRESOURCEW(101))
         };
 
         // fault
-        if (is_zero(::RegisterClassW(&window_class)))
+        if (is_zero(::RegisterClassExW(&window_class)))
             return;
 
-        // Window must be visible (?) to capture shutdown.
+        // Zero sizing results in title bar only.
+        // WS_EX_NOACTIVATE: prevents focus-stealing.
+        // WS_VISIBLE: required to capture WM_QUERYENDSESSION.
         window_ = ::CreateWindowExW
         (
-            0u,
+            WS_EX_NOACTIVATE,
             window_name,
             window_title,
             WS_VISIBLE,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            400,
-            300,
+            0, 0, 0, 0,
             NULL,
             NULL,
             ::GetModuleHandleW(NULL),

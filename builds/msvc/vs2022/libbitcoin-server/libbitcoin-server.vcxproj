@@ -219,4 +219,7 @@
   <ItemGroup>
     <Natvis Include="..\..\debug.natvis" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="libbitcoin.ico" />
+  </ItemGroup>
 </Project>

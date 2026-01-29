@@ -254,4 +254,7 @@
       <Filter>resource</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="libbitcoin.ico" />
+  </ItemGroup>
 </Project>
