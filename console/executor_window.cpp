@@ -19,6 +19,7 @@
 #include "executor.hpp"
 
 #include <future>
+#include <optional>
 #include <thread>
 #include "localize.hpp"
 
@@ -51,8 +52,8 @@ LRESULT CALLBACK executor::window_proc(HWND handle, UINT message,
 // static initializers.
 #if defined(HAVE_MSC)
 HWND executor::window_handle_{};
-std::jthread executor::window_thread_{};
 std::promise<bool> executor::window_ready_{};
+std::optional<std::thread> executor::window_thread_{};
 #endif
 
 // static
@@ -61,7 +62,7 @@ void executor::create_hidden_window()
 #if defined(HAVE_MSC)
     static constexpr auto window_name = L"HiddenShutdownWindow";
 
-    window_thread_ = std::jthread([]()
+    window_thread_.emplace(std::thread([]()
     {
         const auto instance = ::GetModuleHandleW(NULL);
         const WNDCLASSEXW window_class
@@ -110,7 +111,7 @@ void executor::create_hidden_window()
             ::TranslateMessage(&message);
             ::DispatchMessageW(&message);
         }
-    });
+    }));
 #endif
 }
 
@@ -122,6 +123,12 @@ void executor::destroy_hidden_window()
 
     if (!is_null(window_handle_))
         ::PostMessageW(window_handle_, WM_QUIT, 0, 0);
+
+    if (window_thread_.has_value() && window_thread_.value().joinable())
+    {
+        window_thread_.value().join();
+        window_thread_.reset();
+    }
 
     if (!is_null(window_handle_))
     {

@@ -35,10 +35,10 @@ using namespace std::placeholders;
 // ----------------------------------------------------------------------------
 
 // static initializers.
-std::atomic<int> executor::signal_{ unsignalled };
-std::promise<bool> executor::stopping_{};
 std::promise<bool> executor::stopped_{};
-std::jthread executor::poller_thread_{};
+std::promise<bool> executor::stopping_{};
+std::atomic<int> executor::signal_{ unsignalled };
+std::optional<std::thread> executor::poller_thread_{};
 
 // class factory (singleton)
 executor& executor::factory(parser& metadata, std::istream& input,
@@ -93,6 +93,12 @@ void executor::initialize_stop()
 void executor::uninitialize_stop()
 {
     stop();
+    if (poller_thread_.has_value() && poller_thread_.value().joinable())
+    {
+        poller_thread_.value().join();
+        poller_thread_.reset();
+    }
+
     destroy_hidden_window();
 }
 
@@ -129,13 +135,13 @@ bool executor::canceled()
 // Spinning must be used in signal handler, cannot wait on a promise.
 void executor::poll_for_stopping()
 {
-    poller_thread_ = std::jthread([]()
+    poller_thread_.emplace(std::thread([]()
     {
         while (!canceled())
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
         stopping_.set_value(true);
-    });
+    }));
 }
 
 // Blocks until stopping is signalled by poller.

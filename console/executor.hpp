@@ -21,6 +21,7 @@
 
 #include <atomic>
 #include <future>
+#include <optional>
 #include <thread>
 #include <unordered_map>
 
@@ -170,9 +171,9 @@ private:
     static constexpr int signal_none{ -2 };
 
     static std::atomic<int> signal_;
-    static std::promise<bool> stopping_;
     static std::promise<bool> stopped_;
-    static std::jthread poller_thread_;
+    static std::promise<bool> stopping_;
+    static std::optional<std::thread> poller_thread_;
 
     static void initialize_stop();
     static void uninitialize_stop();
@@ -187,8 +188,8 @@ private:
 
 #if defined(HAVE_MSC)
     static HWND window_handle_;
-    static std::jthread window_thread_;
     static std::promise<bool> window_ready_;
+    static std::optional<std::thread> window_thread_;
     static BOOL WINAPI control_handler(DWORD signal);
     static LRESULT CALLBACK window_proc(HWND handle, UINT message,
         WPARAM wparam, LPARAM lparam);
