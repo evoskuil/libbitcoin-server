@@ -52,6 +52,24 @@ public:
     {
     }
 
+    void stop(const code& ec) NOEXCEPT override
+    {
+        std::cerr << "[STOP TRIGGERED] value=" << ec.value()
+            << " message=\"" << ec.message() << "\""
+            << " category=" << ec.category().name() << std::endl;
+
+        network::channel_rpc<interface::electrum>::stop(ec);
+    }
+
+    void stopping(const code& ec) NOEXCEPT override
+    {
+        std::cerr << "[STOPPING - ASYNC] value=" << ec.value()
+            << " message=\"" << ec.message() << "\""
+            << " category=" << ec.category().name() << std::endl;
+
+        network::channel_rpc<interface::electrum>::stopping(ec);
+    }
+
     /// Properties.
     /// -----------------------------------------------------------------------
 
