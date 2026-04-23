@@ -155,6 +155,18 @@ if "!libbitcoin_server_TAG!" == "" (
         exit /b 1
     )
 
+    set "REMAPPED_PARAMS=!REMAPPED_PARAMS! !libbitcoin-system_PARAMS!"
+    set "REMAPPED_PARAMS=!REMAPPED_PARAMS! !libbitcoin-system-examples_PARAMS!"
+    set "REMAPPED_PARAMS=!REMAPPED_PARAMS! !libbitcoin-system-test_PARAMS!"
+    set "REMAPPED_PARAMS=!REMAPPED_PARAMS! !libbitcoin-database_PARAMS!"
+    set "REMAPPED_PARAMS=!REMAPPED_PARAMS! !libbitcoin-database-tools_PARAMS!"
+    set "REMAPPED_PARAMS=!REMAPPED_PARAMS! !libbitcoin-database-test_PARAMS!"
+    set "REMAPPED_PARAMS=!REMAPPED_PARAMS! !libbitcoin-network_PARAMS!"
+    set "REMAPPED_PARAMS=!REMAPPED_PARAMS! !libbitcoin-network-test_PARAMS!"
+    set "REMAPPED_PARAMS=!REMAPPED_PARAMS! !libbitcoin-node_PARAMS!"
+    set "REMAPPED_PARAMS=!REMAPPED_PARAMS! !libbitcoin-node-test_PARAMS!"
+    set "REMAPPED_PARAMS=!REMAPPED_PARAMS! !libbitcoin-server_PARAMS!"
+
     call :msg_heading "Configuration"
     call :display_build_variables
 
@@ -175,7 +187,7 @@ if "!libbitcoin_server_TAG!" == "" (
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
-    call :build_msbuild "libbitcoin-system" "builds\msvc\%proj_version%" "libbitcoin-system" "!libbitcoin-system_PARAMS!"
+    call :build_msbuild "libbitcoin-system" "builds\msvc\%proj_version%" "libbitcoin-system" "!REMAPPED_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
@@ -184,7 +196,7 @@ if "!libbitcoin_server_TAG!" == "" (
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
-    call :build_msbuild "libbitcoin-database" "builds\msvc\%proj_version%" "libbitcoin-database" "!libbitcoin-database_PARAMS!"
+    call :build_msbuild "libbitcoin-database" "builds\msvc\%proj_version%" "libbitcoin-database" "!REMAPPED_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
@@ -193,7 +205,7 @@ if "!libbitcoin_server_TAG!" == "" (
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
-    call :build_msbuild "libbitcoin-network" "builds\msvc\%proj_version%" "libbitcoin-network" "!libbitcoin-network_PARAMS!"
+    call :build_msbuild "libbitcoin-network" "builds\msvc\%proj_version%" "libbitcoin-network" "!REMAPPED_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
@@ -202,7 +214,7 @@ if "!libbitcoin_server_TAG!" == "" (
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
-    call :build_msbuild "libbitcoin-node" "builds\msvc\%proj_version%" "libbitcoin-node" "!libbitcoin-node_PARAMS!"
+    call :build_msbuild "libbitcoin-node" "builds\msvc\%proj_version%" "libbitcoin-node" "!REMAPPED_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
@@ -211,16 +223,16 @@ if "!libbitcoin_server_TAG!" == "" (
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
-    call :build_msbuild "libbitcoin-server" "builds\msvc\%proj_version%" "libbitcoin-server" "!libbitcoin-server_PARAMS!"
+    call :build_msbuild "libbitcoin-server" "builds\msvc\%proj_version%" "libbitcoin-server" "!REMAPPED_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
-    call :build_msbuild "libbitcoin-server" "builds\msvc\%proj_version%" "bs" "!bs_PARAMS!"
+    call :build_msbuild "libbitcoin-server" "builds\msvc\%proj_version%" "bs" "!REMAPPED_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
     if not "!BUILD_SKIP_TESTS!" == "yes" (
-        call :build_msbuild "libbitcoin-server" "builds\msvc\%proj_version%" "libbitcoin-server-test" "!libbitcoin-server-test_PARAMS!"
+        call :build_msbuild "libbitcoin-server" "builds\msvc\%proj_version%" "libbitcoin-server-test" "!REMAPPED_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
@@ -417,6 +429,7 @@ if "!libbitcoin_server_TAG!" == "" (
 :display_build_variables
     call :msg "libbitcoin-system_PARAMS        : !libbitcoin-system_PARAMS!"
     call :msg "libbitcoin-system_PARAMS        : !libbitcoin-system_PARAMS!"
+    call :msg "REMAPPED_PARAMS                 : !REMAPPED_PARAMS!"
     call :msg "UNHANDLED_ARGS                  : !UNHANDLED_ARGS!"
     call :msg "BUILD_CONFIG                    : !BUILD_CONFIG!"
     call :msg "BUILD_PLATFORM                  : !BUILD_PLATFORM!"

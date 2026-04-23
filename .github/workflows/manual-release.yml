@@ -163,6 +163,22 @@ jobs:
             configuration: StaticDebug
             platform: "x64"
             version: "vs2022"
+            options: "--enable-shani"
+            basename: "bs-StaticDebug-shani-option"
+
+          - image: windows-latest
+            toolchain: msbuild
+            configuration: StaticRelease
+            platform: "x64"
+            version: "vs2022"
+            options: "--enable-shani"
+            basename: "bs-StaticRelease-shani-option"
+
+          - image: windows-latest
+            toolchain: msbuild
+            configuration: StaticDebug
+            platform: "x64"
+            version: "vs2022"
             options: "\"/p:Option-sha=true\""
             basename: "bs-StaticDebug-shani"
 
@@ -173,6 +189,22 @@ jobs:
             version: "vs2022"
             options: "\"/p:Option-sha=true\""
             basename: "bs-StaticRelease-shani"
+
+          - image: windows-latest
+            toolchain: msbuild
+            configuration: StaticDebug
+            platform: "x64"
+            version: "vs2022"
+            options: "--enable-avx512"
+            basename: "bs-StaticDebug-avx512-option"
+
+          - image: windows-latest
+            toolchain: msbuild
+            configuration: StaticRelease
+            platform: "x64"
+            version: "vs2022"
+            options: "--enable-avx512"
+            basename: "bs-StaticRelease-avx512-option"
 
           - image: windows-latest
             toolchain: msbuild
@@ -300,6 +332,7 @@ jobs:
         shell: cmd
         run: >
           .\libbitcoin-server\builds\msvc\build-msvc.cmd
+          --verbose
           --build-src-dir "${{ github.workspace }}"
           --build-config ${{ matrix.configuration }}
           --build-platform ${{ matrix.platform }}
