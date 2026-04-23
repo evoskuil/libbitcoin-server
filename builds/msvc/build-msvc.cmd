@@ -175,7 +175,7 @@ if "!libbitcoin_server_TAG!" == "" (
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
-    call :build_msbuild "libbitcoin-system" "builds\msvc\%proj_version%" "libbitcoin-system"
+    call :build_msbuild "libbitcoin-system" "builds\msvc\%proj_version%" "libbitcoin-system" "!libbitcoin-system_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
@@ -184,7 +184,7 @@ if "!libbitcoin_server_TAG!" == "" (
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
-    call :build_msbuild "libbitcoin-database" "builds\msvc\%proj_version%" "libbitcoin-database"
+    call :build_msbuild "libbitcoin-database" "builds\msvc\%proj_version%" "libbitcoin-database" "!libbitcoin-database_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
@@ -193,7 +193,7 @@ if "!libbitcoin_server_TAG!" == "" (
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
-    call :build_msbuild "libbitcoin-network" "builds\msvc\%proj_version%" "libbitcoin-network"
+    call :build_msbuild "libbitcoin-network" "builds\msvc\%proj_version%" "libbitcoin-network" "!libbitcoin-network_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
@@ -202,7 +202,7 @@ if "!libbitcoin_server_TAG!" == "" (
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
-    call :build_msbuild "libbitcoin-node" "builds\msvc\%proj_version%" "libbitcoin-node"
+    call :build_msbuild "libbitcoin-node" "builds\msvc\%proj_version%" "libbitcoin-node" "!libbitcoin-node_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
@@ -211,16 +211,16 @@ if "!libbitcoin_server_TAG!" == "" (
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
-    call :build_msbuild "libbitcoin-server" "builds\msvc\%proj_version%" "libbitcoin-server"
+    call :build_msbuild "libbitcoin-server" "builds\msvc\%proj_version%" "libbitcoin-server" "!libbitcoin-server_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
-    call :build_msbuild "libbitcoin-server" "builds\msvc\%proj_version%" "bs"
+    call :build_msbuild "libbitcoin-server" "builds\msvc\%proj_version%" "bs" "!bs_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
     if not "!BUILD_SKIP_TESTS!" == "yes" (
-        call :build_msbuild "libbitcoin-server" "builds\msvc\%proj_version%" "libbitcoin-server-test"
+        call :build_msbuild "libbitcoin-server" "builds\msvc\%proj_version%" "libbitcoin-server-test" "!libbitcoin-server-test_PARAMS!"
     if %ERRORLEVEL% neq 0 (
         exit /b %ERRORLEVEL%
     )
@@ -241,6 +241,18 @@ if "!libbitcoin_server_TAG!" == "" (
 :parse_input
     if "%~1" == "" (
         goto :end_parse_input
+    ) else if "%~1" == "--enable-avx512" (
+        if "!libbitcoin-system_PARAMS!" == "" (
+            set "libbitcoin-system_PARAMS=/p:CXXFLAGS=\"/arch:AVX512\""
+        ) else (
+            set "libbitcoin-system_PARAMS=!libbitcoin-system_PARAMS! /p:CXXFLAGS=\"/arch:AVX512\""
+        )
+    ) else if "%~1" == "--enable-shani" (
+        if "!libbitcoin-system_PARAMS!" == "" (
+            set "libbitcoin-system_PARAMS=/p:Option-sha=true"
+        ) else (
+            set "libbitcoin-system_PARAMS=!libbitcoin-system_PARAMS! /p:Option-sha=true"
+        )
     ) else if "%~1" == "--build-config" (
         set "BUILD_CONFIG=%~2"
         shift
@@ -273,7 +285,7 @@ if "!libbitcoin_server_TAG!" == "" (
         set "DISPLAY_HELP=yes"
     ) else (
         if "!UNHANDLED_ARGS!" == "" (
-            set "UNHANDLED_ARGS=%1"
+            set "UNHANDLED_ARGS=%~1"
         ) else (
             set "UNHANDLED_ARGS=!UNHANDLED_ARGS! %1"
         )
@@ -331,6 +343,24 @@ if "!libbitcoin_server_TAG!" == "" (
     set "PROJECT=%~1"
     set "RELATIVE_PATH=%~2"
     set "TARGET=%~3"
+    shift
+    shift
+    shift
+
+    set "ADDITIONAL_PARAMS="
+:build_msbuild_parse_remaining
+    if "%~1" == "" (
+        goto :end_build_msbuild_parse_remaining
+    ) else (
+        if "!ADDITIONAL_PARAMS!" == "" (
+            set "ADDITIONAL_PARAMS=%~1"
+        ) else (
+            set "ADDITIONAL_PARAMS=!ADDITIONAL_PARAMS! %~1"
+        )
+    )
+    shift
+    goto :build_msbuild_parse_remaining
+:end_build_msbuild_parse_remaining
 
     if not "%TARGET%" == "" (
         if not "!BUILD_MODE!" == "" (
@@ -361,10 +391,10 @@ if "!libbitcoin_server_TAG!" == "" (
         exit /b %ERRORLEVEL%
     )
 
-    !MSBUILD_EXE! /verbosity:!MSBUILD_VERBOSE! !SYMBOLS_ARG!/p:Platform=!BUILD_PLATFORM! /p:Configuration=!BUILD_CONFIG! /p:PreferredToolArchitecture=x64 %TARGET_ARG% %PROJECT%.sln /p:PreBuildEventUseInBuild=false /p:PostBuildEventUseInBuild=false !UNHANDLED_ARGS!
+    !MSBUILD_EXE! /verbosity:!MSBUILD_VERBOSE! !SYMBOLS_ARG!/p:Platform=!BUILD_PLATFORM! /p:Configuration=!BUILD_CONFIG! /p:PreferredToolArchitecture=x64 %TARGET_ARG% %PROJECT%.sln /p:PreBuildEventUseInBuild=false /p:PostBuildEventUseInBuild=false !UNHANDLED_ARGS! !ADDITIONAL_PARAMS!
 
     if %ERRORLEVEL% neq 0 (
-        call :msg_error "!MSBUILD_EXE! /verbosity:!MSBUILD_VERBOSE! !SYMBOLS_ARG!/p:Platform=!BUILD_PLATFORM! /p:Configuration=!BUILD_CONFIG! /p:PreferredToolArchitecture=x64 %TARGET_ARG% %PROJECT%.sln /p:PreBuildEventUseInBuild=false /p:PostBuildEventUseInBuild=false !UNHANDLED_ARGS!"
+        call :msg_error "!MSBUILD_EXE! /verbosity:!MSBUILD_VERBOSE! !SYMBOLS_ARG!/p:Platform=!BUILD_PLATFORM! /p:Configuration=!BUILD_CONFIG! /p:PreferredToolArchitecture=x64 %TARGET_ARG% %PROJECT%.sln /p:PreBuildEventUseInBuild=false /p:PostBuildEventUseInBuild=false !UNHANDLED_ARGS! !ADDITIONAL_PARAMS!"
         call :pop_directory
         exit /b 1
     )
@@ -385,6 +415,9 @@ if "!libbitcoin_server_TAG!" == "" (
     exit /b %ERRORLEVEL%
 
 :display_build_variables
+    call :msg "libbitcoin-system_PARAMS        : !libbitcoin-system_PARAMS!"
+    call :msg "libbitcoin-system_PARAMS        : !libbitcoin-system_PARAMS!"
+    call :msg "UNHANDLED_ARGS                  : !UNHANDLED_ARGS!"
     call :msg "BUILD_CONFIG                    : !BUILD_CONFIG!"
     call :msg "BUILD_PLATFORM                  : !BUILD_PLATFORM!"
     call :msg "BUILD_VERSION                   : !BUILD_VERSION!"

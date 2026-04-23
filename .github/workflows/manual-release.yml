@@ -144,80 +144,26 @@ jobs:
 
       matrix:
         include:
-          - image: ubuntu-latest
-            toolchain: gnu
-            cc: "gcc"
-            cxx: "g++"
-            configuration: debug
-            link: static
-            options: "--enable-avx2"
-            basename: "bs-StaticDebug"
-
-          - image: ubuntu-latest
-            toolchain: cmake
-            cc: "clang"
-            cxx: "clang++"
-            configuration: release
-            link: static
-            options: "-Denable-avx2=ON"
-            basename: "bs-StaticRelease"
-
-          - image: ubuntu-latest
-            toolchain: gnu
-            cc: "gcc"
-            cxx: "g++"
-            configuration: debug
-            link: static
-            options: "--enable-shani"
-            basename: "bs-StaticDebug-shani"
-
-          - image: ubuntu-latest
-            toolchain: cmake
-            cc: "clang"
-            cxx: "clang++"
-            configuration: release
-            link: static
-            options: "-Denable-shani=ON"
-            basename: "bs-StaticRelease-shani"
-
-          - image: ubuntu-latest
-            toolchain: gnu
-            cc: "gcc"
-            cxx: "g++"
-            configuration: debug
-            link: static
-            options: "--enable-avx512"
-            basename: "bs-StaticDebug-avx512"
-
-          - image: ubuntu-latest
-            toolchain: cmake
-            cc: "clang"
-            cxx: "clang++"
-            configuration: release
-            link: static
-            options: "-Denable-avx512=ON"
-            basename: "bs-StaticRelease-avx512"
-
           - image: windows-latest
             toolchain: msbuild
             configuration: StaticDebug
             platform: "x64"
             version: "vs2022"
-            basename: "bs-StaticDebug"
+            basename: "bs-StaticDebug-avx2"
 
           - image: windows-latest
             toolchain: msbuild
             configuration: StaticRelease
             platform: "x64"
             version: "vs2022"
-            basename: "bs-StaticRelease"
+            basename: "bs-StaticRelease-avx2"
 
           - image: windows-latest
             toolchain: msbuild
             configuration: StaticDebug
             platform: "x64"
             version: "vs2022"
-            options: "/p:Option-sha"
+            options: "\"/p:Option-sha=true\""
             basename: "bs-StaticDebug-shani"
 
           - image: windows-latest
@@ -225,7 +171,7 @@ jobs:
             configuration: StaticRelease
             platform: "x64"
             version: "vs2022"
-            options: "/p:Option-sha"
+            options: "\"/p:Option-sha=true\""
             basename: "bs-StaticRelease-shani"
 
           - image: windows-latest
@@ -233,7 +179,7 @@ jobs:
             configuration: StaticDebug
             platform: "x64"
             version: "vs2022"
-            options: "/arch:AVX512"
+            options: "\"/p:CXXFLAGS=\\\"/arch:AVX512\\\"\""
             basename: "bs-StaticDebug-avx512"
 
           - image: windows-latest
@@ -241,7 +187,7 @@ jobs:
             configuration: StaticRelease
             platform: "x64"
             version: "vs2022"
-            options: "/arch:AVX512"
+            options: "\"/p:CXXFLAGS=\\\"/arch:AVX512\\\"\""
             basename: "bs-StaticRelease-avx512"
 
     steps:
