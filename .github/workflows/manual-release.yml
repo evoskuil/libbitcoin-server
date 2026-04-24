@@ -149,78 +149,8 @@ jobs:
             configuration: StaticDebug
             platform: "x64"
             version: "vs2022"
-            basename: "bs-StaticDebug-avx2"
-
-          - image: windows-latest
-            toolchain: msbuild
-            configuration: StaticRelease
-            platform: "x64"
-            version: "vs2022"
-            basename: "bs-StaticRelease-avx2"
-
-          - image: windows-latest
-            toolchain: msbuild
-            configuration: StaticDebug
-            platform: "x64"
-            version: "vs2022"
-            options: "--enable-shani"
-            basename: "bs-StaticDebug-shani-option"
-
-          - image: windows-latest
-            toolchain: msbuild
-            configuration: StaticRelease
-            platform: "x64"
-            version: "vs2022"
-            options: "--enable-shani"
-            basename: "bs-StaticRelease-shani-option"
-
-          - image: windows-latest
-            toolchain: msbuild
-            configuration: StaticDebug
-            platform: "x64"
-            version: "vs2022"
-            options: "\"/p:Option-sha=true\""
-            basename: "bs-StaticDebug-shani"
-
-          - image: windows-latest
-            toolchain: msbuild
-            configuration: StaticRelease
-            platform: "x64"
-            version: "vs2022"
-            options: "\"/p:Option-sha=true\""
-            basename: "bs-StaticRelease-shani"
-
-          - image: windows-latest
-            toolchain: msbuild
-            configuration: StaticDebug
-            platform: "x64"
-            version: "vs2022"
             options: "--enable-avx512"
             basename: "bs-StaticDebug-avx512-option"
-
-          - image: windows-latest
-            toolchain: msbuild
-            configuration: StaticRelease
-            platform: "x64"
-            version: "vs2022"
-            options: "--enable-avx512"
-            basename: "bs-StaticRelease-avx512-option"
-
-          - image: windows-latest
-            toolchain: msbuild
-            configuration: StaticDebug
-            platform: "x64"
-            version: "vs2022"
-            options: "\"/p:CXXFLAGS=\\\"/arch:AVX512\\\"\""
-            basename: "bs-StaticDebug-avx512"
-
-          - image: windows-latest
-            toolchain: msbuild
-            configuration: StaticRelease
-            platform: "x64"
-            version: "vs2022"
-            options: "\"/p:CXXFLAGS=\\\"/arch:AVX512\\\"\""
-            basename: "bs-StaticRelease-avx512"
 
     steps:
       - name: checkout server

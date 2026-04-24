@@ -255,9 +255,9 @@ if "!libbitcoin_server_TAG!" == "" (
         goto :end_parse_input
     ) else if "%~1" == "--enable-avx512" (
         if "!libbitcoin-system_PARAMS!" == "" (
-            set "libbitcoin-system_PARAMS=/p:CXXFLAGS=\"/arch:AVX512\""
+            set "libbitcoin-system_PARAMS=/p:ClCompile_AdditionalOptions=\"/arch:AVX512\""
         ) else (
-            set "libbitcoin-system_PARAMS=!libbitcoin-system_PARAMS! /p:CXXFLAGS=\"/arch:AVX512\""
+            set "libbitcoin-system_PARAMS=!libbitcoin-system_PARAMS! /p:ClCompile_AdditionalOptions=\"/arch:AVX512\""
         )
     ) else if "%~1" == "--enable-shani" (
         if "!libbitcoin-system_PARAMS!" == "" (
