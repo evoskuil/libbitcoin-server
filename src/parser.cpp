@@ -108,6 +108,7 @@ parser::parser(system::chain::selection context,
 
     configured.node.minimum_fee_rate = 0.000001;
     configured.node.batch_signatures = 1'000'000;
+    configured.node.batch_silent = 1'000'000;
 
     // database
 
@@ -2115,6 +2116,11 @@ options_metadata parser::load_settings() THROWS
         "node.batch_signatures",
         setting<uint64_t>(&configured.node.batch_signatures),
         "Count of signatures to verify in each GPU batch (as available), defaults to {} (0 disables)."
+    )
+    (
+        "node.batch_silent",
+        setting<uint64_t>(&configured.node.batch_silent),
+        "Count of silent payment rows to compute in each GPU batch (as batch_signatures enables), defaults to {}."
     )
     (
         "node.fee_estimate_horizon",
