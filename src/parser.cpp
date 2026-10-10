@@ -107,7 +107,7 @@ parser::parser(system::chain::selection context,
     // node
 
     configured.node.minimum_fee_rate = 0.000001;
-    configured.node.batch_signatures = 1'000'000;
+    configured.node.batch_verify = 1'000'000;
     configured.node.batch_silent = 1'000'000;
 
     // database
@@ -2113,14 +2113,14 @@ options_metadata parser::load_settings() THROWS
         "Provide opportunistic connection encryption, defaults to {}."
     )
     (
-        "node.batch_signatures",
-        setting<uint64_t>(&configured.node.batch_signatures),
-        "Count of signatures to verify in each GPU batch (as available), defaults to {} (0 disables)."
+        "node.batch_verify",
+        setting<uint64_t>(&configured.node.batch_verify),
+        "Count of signatures to verify in each GPU batch, defaults to {} (0 disables)."
     )
     (
         "node.batch_silent",
         setting<uint64_t>(&configured.node.batch_silent),
-        "Count of silent payment rows to compute in each GPU batch (as batch_signatures enables), defaults to {}."
+        "Count of silent payment records to compute in each GPU batch, defaults to {} (0 disables)."
     )
     (
         "node.fee_estimate_horizon",

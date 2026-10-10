@@ -63,8 +63,9 @@ void executor::warn_hardware(system::string_list& out) const
     if (device && batched::compiled() && !batched::accelerated())
         out.emplace_back(BS_HARDWARE_UNSUPPORTED);
 
-    if (batched::accelerated() &&
-        !metadata_.configured.node.batch_signatures_enabled())
+    const auto& node = metadata_.configured.node;
+    if (batched::accelerated() && !node.batch_verify_enabled() &&
+        !node.batch_silent_enabled())
         out.emplace_back(BS_HARDWARE_UNCONFIGURED);
 }
 
