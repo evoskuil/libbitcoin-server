@@ -347,7 +347,7 @@
 #define BS_HARDWARE_UNSUPPORTED \
     "A cuda device is present but unsupported by the compiled acceleration."
 #define BS_HARDWARE_UNCONFIGURED \
-    "A signature batching device is present but batching is not configured."
+    "A cuda device is present but batching is not configured."
 #define BS_MEMORY_BELOW_MINIMUM \
     "Memory is below the minimum recommended for initial block download."
 #define BS_MEMORY_BELOW_VALIDATION \
