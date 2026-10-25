@@ -127,7 +127,8 @@ void inject_tx_prevouts(system::json::object& out,
     auto entry = out.at("vin").as_array().begin();
     std::ranges::for_each(*tx.inputs_ptr(), [&](const auto& in) NOEXCEPT
     {
-        if (query.get_tx_height(height, in->metadata.parent_tx))
+        if (query.get_tx_height(height,
+            query.to_output_tx(in->metadata.output_link)))
         {
             const auto& put = *in->prevout;
             auto script = to_script_public_key(put.script(), p2kh, p2sh,
