@@ -39,7 +39,8 @@ bool setup_candidate_store(test::query_t& query, bool associated) NOEXCEPT
         query.push_candidate(query.to_header(test::block8_hash)) &&
         query.push_candidate(query.to_header(test::block9_hash)) &&
         (associated ?
-            query.set(test::mock_block10, context, {}, false, false) :
+            query.set(test::mock_block10, context, {}, false, false) &&
+            test::bind(query, test::mock_block10) :
             query.set(header, context, {}, false)) &&
         query.push_candidate(query.to_header(header.hash()));
 }

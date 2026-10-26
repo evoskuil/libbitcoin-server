@@ -146,9 +146,8 @@ void executor::scan_buckets() const
 
     scan_buckets("header", store_.header, query_.header_records());
     scan_buckets("tx", store_.tx, query_.tx_records());
-    scan_buckets("ins", store_.ins, query_.ins_records());
-    scan_buckets("outs", store_.outs, query_.outs_records());
-    scan_buckets("duplicate", store_.duplicate, query_.duplicate_records());
+    scan_buckets("conflict", store_.conflict, query_.conflict_records());
+    scan_buckets("address", store_.address, query_.address_records());
     scan_buckets("pool", store_.pool, query_.pool_records());
     scan_buckets("wtxid", store_.wtxid, query_.wtxid_records());
 
@@ -374,22 +373,6 @@ void executor::scan_collisions()
         {
             return query_.get_tx_key(possible_narrow_cast<
                 tx_link::integer>(index));
-        });
-
-    scan_collisions<table::ins>("ins", query_.ins_records(),
-        query_.ins_buckets(), store_.ins.filter_k(), distributions, filters,
-        [&](size_t index)
-        {
-            return query_.get_point_key(possible_narrow_cast<
-                ins_link::integer>(index));
-        });
-
-    scan_collisions<table::outs>("outs", query_.outs_records(),
-        query_.outs_buckets(), store_.outs.filter_k(), distributions, filters,
-        [&](size_t index)
-        {
-            return table::outs::key{ query_.get_outs_key(possible_narrow_cast<
-                outs_link::integer>(index)) };
         });
 
     scan_collisions<table::wtxid>("wtxid", query_.wtxid_records(),

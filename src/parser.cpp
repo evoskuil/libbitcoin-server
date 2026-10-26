@@ -163,15 +163,12 @@ parser::parser(system::chain::selection context,
     configured.database.tx.size = 870'317'885;
     configured.database.tx.rate = 1;
 
-    // ins (required)
-    configured.database.ins.expected = 3'363'467'251;
-    configured.database.ins.size = 1'749'002'971;
+    configured.database.ins.size = 437'250'743;
     configured.database.ins.rate = 1;
-
-    // outs (optional, disabled by a configured bucket count of zero)
-    configured.database.outs.expected = 3'741'929'086;
     configured.database.outs.size = 336'773'618;
     configured.database.outs.rate = 1;
+    configured.database.spend.buckets = 33'634'673;
+    configured.database.spend.rate = 1;
 
     configured.database.input.size = 67'269'346;
     configured.database.input.rate = 1;
@@ -187,6 +184,8 @@ parser::parser(system::chain::selection context,
 
     configured.database.strong.buckets = 1'359'871'695;
     configured.database.strong.rate = 1;
+    configured.database.spender.buckets = 37'419'291;
+    configured.database.spender.rate = 1;
     configured.database.scan.buckets = 950'001;
     configured.database.scan.size = 0;
     configured.database.scan.rate = 1;
@@ -204,29 +203,29 @@ parser::parser(system::chain::selection context,
     configured.database.presilent.size = 0;
     configured.database.presilent.rate = 1;
 
-    configured.database.prevout.buckets = 0;
-    configured.database.prevout.size = 0;
-    configured.database.prevout.rate = 1;
-
-    configured.database.duplicate.buckets = 1024;
-    configured.database.duplicate.expected = 0;
-    configured.database.duplicate.size = 0;
-    configured.database.duplicate.rate = 1;
+    configured.database.points.size = 0;
+    configured.database.points.rate = 1;
 
     configured.database.state.buckets = 950'001;
     configured.database.state.rate = 1;
 
-    // pool and spends (disabled by zero buckets)
+    // pool (disabled by zero buckets), conflict expected is 5% of pool
     configured.database.pool.expected = 10'000'000;
     configured.database.pool.size = 0;
     configured.database.pool.rate = 1;
     configured.database.wtxid.expected = 10'000'000;
     configured.database.wtxid.size = 0;
     configured.database.wtxid.rate = 1;
-    configured.database.spends.size = 0;
-    configured.database.spends.rate = 1;
+    configured.database.conflict.expected = 500'000;
+    configured.database.conflict.size = 0;
+    configured.database.conflict.rate = 1;
 
     // optional
+
+    // address (disabled by a configured bucket count of zero)
+    configured.database.address.expected = 3'741'929'086;
+    configured.database.address.size = 149'677'163;
+    configured.database.address.rate = 1;
 
     // also disabled by filter_tx
     configured.database.filter_bk.buckets = 0;
@@ -257,13 +256,13 @@ void parser::derive_buckets() NOEXCEPT
         database.tx.buckets = table::transaction::derive_buckets(
             database.tx.expected, contested, target);
 
-    if (!is_configured("table.ins.buckets"))
-        database.ins.buckets = table::ins::derive_buckets(
-            database.ins.expected, contested, target);
+    if (!is_configured("table.address.buckets"))
+        database.address.buckets = table::address::derive_buckets(
+            database.address.expected, address_contested, address_target);
 
-    if (!is_configured("table.outs.buckets"))
-        database.outs.buckets = table::outs::derive_buckets(
-            database.outs.expected, address_contested, address_target);
+    if (!is_configured("table.conflict.buckets"))
+        database.conflict.buckets = table::conflict::derive_buckets(
+            database.conflict.expected, contested, target);
 
     if (!is_configured("table.pool.buckets"))
         database.pool.buckets = table::pool::derive_buckets(
@@ -2390,16 +2389,6 @@ options_metadata parser::load_settings() THROWS
 
     /* table.ins */
     (
-        "table.ins.buckets",
-        setting<uint32_t>(&configured.database.ins.buckets),
-        "The number of buckets in the ins table head, dynamic default."
-    )
-    (
-        "table.ins.expected",
-        setting<uint64_t>(&configured.database.ins.expected),
-        "The expected element count of the ins table, defaults to {}."
-    )
-    (
         "table.ins.size",
         setting<uint64_t>(&configured.database.ins.size),
         "The minimum allocation of the ins table body, defaults to {}."
@@ -2412,16 +2401,6 @@ options_metadata parser::load_settings() THROWS
 
     /* table.outs */
     (
-        "table.outs.buckets",
-        setting<uint32_t>(&configured.database.outs.buckets),
-        "The number of buckets in the outs table head, dynamic default (0 disables address index)."
-    )
-    (
-        "table.outs.expected",
-        setting<uint64_t>(&configured.database.outs.expected),
-        "The expected element count of the outs table, defaults to {}."
-    )
-    (
         "table.outs.size",
         setting<uint64_t>(&configured.database.outs.size),
         "The minimum allocation of the outs table body, defaults to {}."
@@ -2430,6 +2409,35 @@ options_metadata parser::load_settings() THROWS
         "table.outs.rate",
         setting<uint16_t>(&configured.database.outs.rate),
         "The percentage expansion of the outs table body, defaults to {}."
+    )
+
+    /* table.spend */
+    (
+        "table.spend.buckets",
+        setting<uint32_t>(&configured.database.spend.buckets),
+        "The number of buckets provisioned in the spend table head, defaults to {}."
+    )
+    (
+        "table.spend.rate",
+        setting<uint16_t>(&configured.database.spend.rate),
+        "The percentage expansion of the spend table head, defaults to {}."
+    )
+
+    /* table.unbound */
+    (
+        "table.unbound.buckets",
+        setting<uint32_t>(&configured.database.unbound.buckets),
+        "The number of buckets in the unbound table head, defaults to {}."
+    )
+    (
+        "table.unbound.size",
+        setting<uint64_t>(&configured.database.unbound.size),
+        "The minimum allocation of the unbound table body, defaults to {}."
+    )
+    (
+        "table.unbound.rate",
+        setting<uint16_t>(&configured.database.unbound.rate),
+        "The percentage expansion of the unbound table body, defaults to {}."
     )
 
     /* table.tx */
@@ -2505,6 +2513,62 @@ options_metadata parser::load_settings() THROWS
         "table.strong.rate",
         setting<uint16_t>(&configured.database.strong.rate),
         "The percentage expansion of the strong table head, defaults to {}."
+    )
+
+    /* table.address */
+    (
+        "table.address.buckets",
+        setting<uint32_t>(&configured.database.address.buckets),
+        "The number of buckets in the address table head, dynamic default (0 disables address index)."
+    )
+    (
+        "table.address.expected",
+        setting<uint64_t>(&configured.database.address.expected),
+        "The expected element count of the address table, defaults to {}."
+    )
+    (
+        "table.address.size",
+        setting<uint64_t>(&configured.database.address.size),
+        "The minimum allocation of the address table body, defaults to {}."
+    )
+    (
+        "table.address.rate",
+        setting<uint16_t>(&configured.database.address.rate),
+        "The percentage expansion of the address table body, defaults to {}."
+    )
+
+    /* table.conflict */
+    (
+        "table.conflict.buckets",
+        setting<uint32_t>(&configured.database.conflict.buckets),
+        "The number of buckets in the conflict table head, dynamic default."
+    )
+    (
+        "table.conflict.expected",
+        setting<uint64_t>(&configured.database.conflict.expected),
+        "The expected element count of the conflict table, defaults to {}."
+    )
+    (
+        "table.conflict.size",
+        setting<uint64_t>(&configured.database.conflict.size),
+        "The minimum allocation of the conflict table body, defaults to {}."
+    )
+    (
+        "table.conflict.rate",
+        setting<uint16_t>(&configured.database.conflict.rate),
+        "The percentage expansion of the conflict table body, defaults to {}."
+    )
+
+    /* table.spender */
+    (
+        "table.spender.buckets",
+        setting<uint32_t>(&configured.database.spender.buckets),
+        "The number of buckets provisioned in the spender table head, defaults to {}."
+    )
+    (
+        "table.spender.rate",
+        setting<uint16_t>(&configured.database.spender.rate),
+        "The percentage expansion of the spender table head, defaults to {}."
     )
 
     /* table.scan */
@@ -2606,43 +2670,21 @@ options_metadata parser::load_settings() THROWS
         "The percentage expansion of each batch_presilent table body, defaults to {}."
     )
 
-    /* table.prevout */
+    /* table.points */
     (
-        "table.prevout.buckets",
-        setting<uint32_t>(&configured.database.prevout.buckets),
-        "The minimum number of buckets in the prevout table head, defaults to {}."
+        "table.points.buckets",
+        setting<uint32_t>(&configured.database.points.buckets),
+        "The number of buckets in each points table head, defaults to {}."
     )
     (
-        "table.prevout.size",
-        setting<uint64_t>(&configured.database.prevout.size),
-        "The minimum allocation of the prevout table body, defaults to {}."
+        "table.points.size",
+        setting<uint64_t>(&configured.database.points.size),
+        "The minimum allocation of each points table body, defaults to {}."
     )
     (
-        "table.prevout.rate",
-        setting<uint16_t>(&configured.database.prevout.rate),
-        "The percentage expansion of the prevout table, defaults to {}."
-    )
-
-    /* table.duplicate */
-    (
-        "table.duplicate.buckets",
-        setting<uint32_t>(&configured.database.duplicate.buckets),
-        "The minimum number of buckets in the duplicate table head, defaults to {}."
-    )
-    (
-        "table.duplicate.expected",
-        setting<uint64_t>(&configured.database.duplicate.expected),
-        "The expected element count of the duplicate table, defaults to {}."
-    )
-    (
-        "table.duplicate.size",
-        setting<uint64_t>(&configured.database.duplicate.size),
-        "The minimum allocation of the duplicate table body, defaults to {}."
-    )
-    (
-        "table.duplicate.rate",
-        setting<uint16_t>(&configured.database.duplicate.rate),
-        "The percentage expansion of the duplicate table, defaults to {}."
+        "table.points.rate",
+        setting<uint16_t>(&configured.database.points.rate),
+        "The percentage expansion of each points table, defaults to {}."
     )
 
     /* table.state */
@@ -2677,18 +2719,6 @@ options_metadata parser::load_settings() THROWS
         "table.pool.rate",
         setting<uint16_t>(&configured.database.pool.rate),
         "The percentage expansion of the pool table body, defaults to {}."
-    )
-
-    /* table.spends */
-    (
-        "table.spends.size",
-        setting<uint64_t>(&configured.database.spends.size),
-        "The minimum allocation of the spends table body, defaults to {}."
-    )
-    (
-        "table.spends.rate",
-        setting<uint16_t>(&configured.database.spends.rate),
-        "The percentage expansion of the spends table body, defaults to {}."
     )
 
     /* table.filter_bk */

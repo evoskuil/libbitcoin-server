@@ -94,6 +94,38 @@ system::json::value parse_json(std::string_view value) NOEXCEPT
     }
 }
 
+bool bind(query_t& query, const system::chain::transaction& tx) NOEXCEPT
+{
+    if (tx.is_coinbase())
+        return true;
+
+    const auto link = query.to_tx(tx.hash(false));
+    if (link.is_terminal())
+        return false;
+
+    uint32_t index{};
+    for (const auto& in: *tx.inputs_ptr())
+    {
+        const auto spent = query.to_output(in->point());
+        const auto point = query.to_point(link, index);
+        if (!spent.is_terminal() && !query.spend(point, spent))
+            return false;
+
+        ++index;
+    }
+
+    return true;
+}
+
+bool bind(query_t& query, const system::chain::block& block) NOEXCEPT
+{
+    for (const auto& tx: *block.transactions_ptr())
+        if (!bind(query, *tx))
+            return false;
+
+    return true;
+}
+
 bool setup_ten_block_store(query_t& query, uint32_t top_flags) NOEXCEPT
 {
     // All ten headers share bits, so cumulative work is height+1 proofs.
@@ -132,7 +164,9 @@ bool setup_three_block_witness_store(query_t& query) NOEXCEPT
 {
     return query.initialize(genesis) &&
         query.set(block1a, database::context{ 0, 1, 0 }, {}, false, false) &&
+        bind(query, block1a) &&
         query.set(block2a, database::context{ 0, 2, 0 }, {}, false, false) &&
+        bind(query, block2a) &&
         query.push_confirmed(query.to_header(block1a.hash()), true) &&
         query.push_confirmed(query.to_header(block2a.hash()), true);
 }
@@ -141,12 +175,19 @@ bool setup_three_block_confirmed_address_store(query_t& query) NOEXCEPT
 {
     return query.initialize(genesis) &&
         query.set(block1a, database::context{ 0, 1, 0 }, {}, false, false) &&
+        bind(query, block1a) &&
         query.set(block2a, database::context{ 0, 2, 0 }, {}, false, false) &&
+        bind(query, block2a) &&
         query.set(test::tx4) &&
+        bind(query, test::tx4) &&
         query.set(test::tx5) &&
+        bind(query, test::tx5) &&
         query.set(block3a, database::context{ 0, 3, 0 }, {}, false, false) &&
+        bind(query, block3a) &&
         query.set(block1b, database::context{ 0, 1, 0 }, {}, false, false) &&
+        bind(query, block1b) &&
         query.set(block2b, database::context{ 0, 2, 0 }, {}, false, false) &&
+        bind(query, block2b) &&
         query.push_confirmed(query.to_header(block1a.hash()), true) &&
         query.push_confirmed(query.to_header(block2a.hash()), true) &&
         query.push_confirmed(query.to_header(block3a.hash()), true);
@@ -157,6 +198,7 @@ bool setup_broadcast_store(query_t& query) NOEXCEPT
 {
     return query.initialize(genesis) &&
         query.set(block1c, database::context{ 0, 1, 0 }, {}, false, false) &&
+        bind(query, block1c) &&
         query.push_confirmed(query.to_header(block1c.hash()), true);
 }
 
@@ -179,10 +221,15 @@ bool setup_three_block_unconfirmed_address_store(query_t& query) NOEXCEPT
 {
     return query.initialize(genesis) &&
         query.set(block1a, database::context{ 0, 1, 0 }, {}, false, false) &&
+        bind(query, block1a) &&
         query.set(block2a, database::context{ 0, 2, 0 }, {}, false, false) &&
+        bind(query, block2a) &&
         query.set(test::tx4) &&
+        bind(query, test::tx4) &&
         query.set(test::tx5) &&
-        query.set(block3a, database::context{ 0, 3, 0 }, {}, false, false);
+        bind(query, test::tx5) &&
+        query.set(block3a, database::context{ 0, 3, 0 }, {}, false, false) &&
+        bind(query, block3a);
 }
 
 const block mock_block10
@@ -898,7 +945,7 @@ const block block1c
             {
                 input
                 {
-                    point{ one_hash, 0x18 },            // missing prevout
+                    point{ genesis.transactions_ptr()->front()->hash(false), 0x00 },
                     script{ { { opcode::push_positive_1 } } },
                     witness{},
                     max_uint32  // sequence (not relative locked)

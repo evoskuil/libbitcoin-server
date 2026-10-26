@@ -240,7 +240,9 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__getblock__block9_verbosity3__tx_objects)
 BOOST_AUTO_TEST_CASE(bitcoind_rpc__getblock__spend_verbosity2__fee)
 {
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.set(test::mock_block11, database::context{ 0, 11, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block11));
 
     const auto response = rpc("getblock", hash_param(test::mock_block11.hash(), "2"));
     const auto& tx = response.at("result").at("tx");
@@ -251,7 +253,9 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__getblock__spend_verbosity2__fee)
 BOOST_AUTO_TEST_CASE(bitcoind_rpc__getrawtransaction__spend_verbose__prevout)
 {
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.set(test::mock_block11, database::context{ 0, 11, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block11));
 
     const auto txid = test::mock_block11.transactions_ptr()->front()->hash(false);
     const auto response = rpc("getrawtransaction", hash_param(txid, "2"));
@@ -348,6 +352,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__gettxout__unspent_coinbase__output)
 BOOST_AUTO_TEST_CASE(bitcoind_rpc__gettxout__archived_unconfirmed__null)
 {
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
 
     const auto txid = test::mock_block10.transactions_ptr()->at(1)->hash(false);
     const auto response = rpc("gettxout", hash_param(txid, "0"));
@@ -705,6 +710,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__combinerawtransaction__key_hash_variants__end
 {
     using namespace chain;
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     // The found_address p2kh output of mock_block10's second transaction.
@@ -746,6 +752,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__combinerawtransaction__multisig_partials__mer
     };
 
     BOOST_REQUIRE(query_.set(block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(block10.hash()), true));
 
     // A spend of the multisig output, endorsed separately by two keys.
@@ -806,6 +813,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__combinerawtransaction__script_hash_multisig_p
     };
 
     BOOST_REQUIRE(query_.set(block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(block10.hash()), true));
 
     const point prevout{ block10.transactions_ptr()->front()->hash(false), 0 };
@@ -865,6 +873,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__combinerawtransaction__witness_script_hash_mu
     };
 
     BOOST_REQUIRE(query_.set(block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(block10.hash()), true));
 
     const point prevout{ block10.transactions_ptr()->front()->hash(false), 0 };
@@ -934,6 +943,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__combinerawtransaction__unsigned_multisig__com
     };
 
     BOOST_REQUIRE(query_.set(block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(block10.hash()), true));
 
     const point prevout{ block10.transactions_ptr()->front()->hash(false), 0 };
@@ -974,6 +984,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__combinerawtransaction__multisig_undecodable_p
     };
 
     BOOST_REQUIRE(query_.set(block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(block10.hash()), true));
 
     const point prevout{ block10.transactions_ptr()->front()->hash(false), 0 };
@@ -1033,6 +1044,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__combinerawtransaction__script_hash_multisig_u
     };
 
     BOOST_REQUIRE(query_.set(block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(block10.hash()), true));
 
     const point prevout{ block10.transactions_ptr()->front()->hash(false), 0 };
@@ -1091,6 +1103,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__combinerawtransaction__witness_script_hash_mu
     };
 
     BOOST_REQUIRE(query_.set(block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(block10.hash()), true));
 
     const point prevout{ block10.transactions_ptr()->front()->hash(false), 0 };
@@ -1145,6 +1158,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__combinerawtransaction__witness_script_hash_ke
     };
 
     BOOST_REQUIRE(query_.set(block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(block10.hash()), true));
 
     const point prevout{ block10.transactions_ptr()->front()->hash(false), 0 };
@@ -3137,6 +3151,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__utxoupdatepsbt__witness_prevout__witness_utxo
     };
 
     BOOST_REQUIRE(query_.set(block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(block10.hash()), true));
 
     const auto txid = encode_hash(block10.transactions_ptr()->front()->hash(false));
@@ -3317,6 +3332,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__waitforblockheight__organized__new_top)
     ws_notify(R"({"jsonrpc":"2.0","id":0,"method":"waitforblockheight","params":[10, 60000]})");
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
     notify(node::chases::organized{ 10 });
 
@@ -3849,6 +3865,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__sendrawtransaction__archived_unconfirmed__txi
 {
     const auto& tx = *test::mock_block10.transactions_ptr()->at(1);
     BOOST_REQUIRE(query_.set(tx));
+    BOOST_REQUIRE(test::bind(query_, tx));
 
     const auto response = rpc("sendrawtransaction", "[\"" + encode_base16(tx.to_data(true)) + "\"]");
     BOOST_REQUIRE_MESSAGE(response.is_object() && response.as_object().contains("result"), serialize(response));
@@ -3858,6 +3875,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__sendrawtransaction__archived_unconfirmed__txi
 BOOST_AUTO_TEST_CASE(bitcoind_rpc__sendrawtransaction__confirmed_spent__verify_error)
 {
     BOOST_REQUIRE(query_.set(test::mock_block13, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block13));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block13.hash()), true));
 
     const auto response = rpc("sendrawtransaction", "[\"" + encode_base16(test::mock_tx13.to_data(true)) + "\"]");
@@ -4184,7 +4202,8 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__gettxspendingprevout__broadcast_spender__spen
 BOOST_AUTO_TEST_CASE(bitcoind_rpc__gettxspendingprevout__confirmed_spender__blockhash)
 {
     const auto funder = test::block1c.transactions_ptr()->front()->hash(false);
-    const auto response = rpc("gettxspendingprevout", prevout_param(one_hash, 0x18, ""));
+    const auto coinbase = test::genesis.transactions_ptr()->front()->hash(false);
+    const auto response = rpc("gettxspendingprevout", prevout_param(coinbase, 0, ""));
     BOOST_REQUIRE_MESSAGE(response.is_object() && response.as_object().contains("result"), serialize(response));
 
     const auto& result = response.at("result").as_array().front().as_object();
@@ -4195,7 +4214,8 @@ BOOST_AUTO_TEST_CASE(bitcoind_rpc__gettxspendingprevout__confirmed_spender__bloc
 
 BOOST_AUTO_TEST_CASE(bitcoind_rpc__gettxspendingprevout__confirmed_spender_mempool_only__echoed)
 {
-    const auto response = rpc("gettxspendingprevout", prevout_param(one_hash, 0x18, ", {\"mempool_only\":true}"));
+    const auto coinbase = test::genesis.transactions_ptr()->front()->hash(false);
+    const auto response = rpc("gettxspendingprevout", prevout_param(coinbase, 0, ", {\"mempool_only\":true}"));
     BOOST_REQUIRE_MESSAGE(response.is_object() && response.as_object().contains("result"), serialize(response));
     BOOST_REQUIRE_EQUAL(response.at("result").as_array().front().as_object().size(), 2u);
 }

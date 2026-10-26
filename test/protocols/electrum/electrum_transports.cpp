@@ -64,6 +64,7 @@ BOOST_AUTO_TEST_CASE(electrum__post__subscribed_event__no_notification)
     BOOST_REQUIRE_EQUAL(response.at("result").as_int64(), 9);
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
     notify(node::chases::organized{ 10 });
 
@@ -174,6 +175,7 @@ BOOST_AUTO_TEST_CASE(electrum__ws__subscribed_event__notified)
     BOOST_REQUIRE_EQUAL(response.at("result").as_int64(), 9);
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
     notify(node::chases::organized{ 10 });
 

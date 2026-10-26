@@ -57,8 +57,11 @@ BOOST_AUTO_TEST_CASE(electrum__blockchain_number_of_blocks_subscribe__notificati
     BOOST_REQUIRE_EQUAL(response.at("result").as_int64(), 9);
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.set(test::mock_block11, database::context{ 0, 11, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block11));
     BOOST_REQUIRE(query_.set(test::mock_block12, database::context{ 0, 12, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block12));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block11.hash()), true));
 
@@ -917,8 +920,11 @@ BOOST_AUTO_TEST_CASE(electrum__blockchain_headers_subscribe__notifications__expe
     BOOST_REQUIRE_EQUAL(result.at("hex").as_string(), encode_base16(test::header9_data));
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.set(test::mock_block11, database::context{ 0, 11, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block11));
     BOOST_REQUIRE(query_.set(test::mock_block12, database::context{ 0, 12, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block12));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block11.hash()), true));
 
@@ -1011,6 +1017,7 @@ BOOST_AUTO_TEST_CASE(electrum__blockchain_number_of_blocks_subscribe__not_header
     BOOST_REQUIRE_EQUAL(response.at("result").as_int64(), 9);
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
     notify(node::chases::organized{ 42 });
     notify(node::chases::organized{ 10 });
@@ -1029,6 +1036,7 @@ BOOST_AUTO_TEST_CASE(electrum__blockchain_headers_subscribe__not_header_notifica
     BOOST_REQUIRE_EQUAL(response.at("result").at("height").as_int64(), 9);
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
     notify(node::chases::organized{ 42 });
     notify(node::chases::organized{ 10 });

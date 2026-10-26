@@ -186,7 +186,7 @@ struct bitcoind_no_address_setup_fixture
             return test::setup_ten_block_store(query);
         }, [](configuration& config)
         {
-            config.database.outs.buckets = 0;
+            config.database.address.buckets = 0;
         })
     {
     }
@@ -473,7 +473,7 @@ struct bitcoind_dangling_no_address_setup_fixture
             return test::setup_dangling_store(query);
         }, [](configuration& config)
         {
-            config.database.outs.buckets = 0;
+            config.database.address.buckets = 0;
         })
     {
     }

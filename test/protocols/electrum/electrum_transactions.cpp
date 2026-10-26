@@ -459,6 +459,7 @@ BOOST_AUTO_TEST_CASE(electrum__blockchain_transaction_get_merkle__mutiple_txs_bl
 
     // Add a confirmed multi-tx block.
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     constexpr auto request = R"({{"id":104,"method":"blockchain.transaction.get_merkle","params":["{}",10]}})" "\n";

@@ -477,8 +477,7 @@ bool mempool_info(system::json::object& out, const node::query& query,
         fee = ceilinged_add(fee, rate.fee);
     }
 
-    const auto indexes = ceilinged_add(query.spends_size(), query.wtxid_size());
-    const auto usage = ceilinged_add(query.pool_size(), indexes);
+    const auto usage = ceilinged_add(query.pool_size(), query.wtxid_size());
     const auto total_fee = to_floating(fee) / chain::satoshi_per_bitcoin;
 
     out = system::json::object

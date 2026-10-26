@@ -226,6 +226,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_json__inject_activity__watched_output__receive_and
 {
     using namespace network::rpc;
     BOOST_REQUIRE(query_.set(test::mock_block13, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block13));
     const auto block = query_.get_block(query_.to_header(test::mock_block13.hash()), false);
     BOOST_REQUIRE(block);
     BOOST_REQUIRE(query_.populate_without_metadata(*block));

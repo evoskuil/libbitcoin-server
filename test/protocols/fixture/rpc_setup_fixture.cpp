@@ -37,7 +37,7 @@ rpc_setup_fixture::rpc_setup_fixture(const initializer& setup,
             config_.database.path = TEST_DIRECTORY;
             config_.database.interval_depth = 2;
             if (!address_index)
-                config_.database.outs.buckets = 0;
+                config_.database.address.buckets = 0;
 
             config_.node.delay_inbound = false;
             config_.node.minimum_fee_rate = 0.0;

@@ -476,6 +476,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__rescanblocks__address_match__matched_transaction)
 {
     const auto block10 = encode_hash(test::mock_block10.hash());
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     rpc("loadtxfilter", std::format(R"([true,["{}"],[]])", found_address));
@@ -496,6 +497,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__filteredblockconnected__address_match__delivered)
     rpc("loadtxfilter", std::format(R"([true,["{}"],[]])", found_address));
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     notify(node::chases::organized{ 10 });
@@ -577,6 +579,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__zero_count__null_result)
 BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__paid_address__verbose_transaction)
 {
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     const auto& paying = *test::mock_block10.transactions_ptr()->at(1);
@@ -599,6 +602,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__paid_address__verbose_tran
 BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__not_verbose__serialized_transaction)
 {
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     const auto& paying = *test::mock_block10.transactions_ptr()->at(1);
@@ -614,6 +618,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__not_verbose__serialized_tr
 BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__skip_past_history__no_tx_info)
 {
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     const auto result = rpc_error("searchrawtransactions", std::format(R"(["{}",1,1])", found_address));
@@ -623,6 +628,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__skip_past_history__no_tx_i
 BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__vinextra__prevout_injected)
 {
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     const auto response = rpc("searchrawtransactions", std::format(R"(["{}",1,0,100,1])", found_address));
@@ -640,6 +646,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__vinextra__prevout_injected
 BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__filteraddrs__filtered_vin_vout)
 {
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     const auto request = std::format(R"(["{0}",1,0,100,0,false,["{0}"]])", found_address);
@@ -705,6 +712,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__recvtx__address_match__delivered_without_notifybl
     rpc("notifyreceived", std::format(R"([["{}"]])", found_address));
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     notify(node::chases::organized{ 10 });
@@ -725,6 +733,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__redeemingtx__spent_in_arming_block__delivered)
     rpc("notifyreceived", std::format(R"([["{}"]])", found_address));
 
     BOOST_REQUIRE(query_.set(test::mock_block13, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block13));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block13.hash()), true));
 
     notify(node::chases::organized{ 10 });
@@ -744,6 +753,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__redeemingtx__notified_outpoint_spent__delivered_o
     rpc("notifyspent", std::format(request, coinbase_txid(test::block1)));
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     notify(node::chases::organized{ 10 });
@@ -935,6 +945,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__numeric_filteraddr__invali
 BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__reverse__found)
 {
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     const auto response = rpc("searchrawtransactions", std::format(R"(["{}",1,0,100,0,true])", found_address));
@@ -946,6 +957,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__reverse__found)
 BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__count_below_history__truncated)
 {
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     const auto& coinbase = *test::block1.transactions_ptr()->front();
@@ -965,6 +977,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__count_below_history__trunc
 BOOST_AUTO_TEST_CASE(btcd_rpc__searchrawtransactions__vinextra_addressable_prevout__prevout_address)
 {
     BOOST_REQUIRE(query_.set(test::mock_block13, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block13));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block13.hash()), true));
 
     const auto& spending = *test::mock_block13.transactions_ptr()->at(2);
@@ -1063,6 +1076,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__rescanblocks__outpoint_spent__spending_transactio
     const auto block10 = encode_hash(test::mock_block10.hash());
     const auto& paying = *test::mock_block10.transactions_ptr()->at(1);
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     constexpr auto request = R"([true,[],[{{"hash":"{}","index":0}}]])";
@@ -1087,6 +1101,7 @@ BOOST_AUTO_TEST_CASE(btcd_rpc__filteredblockconnected__outpoint_spent__delivered
     REQUIRE_NO_THROW_TRUE(rpc("loadtxfilter", std::format(request, coinbase_txid(test::block1))).at("result").is_null());
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     notify(node::chases::organized{ 10 });
@@ -1193,6 +1208,7 @@ BOOST_AUTO_TEST_CASE(btcd_limited_filter__recvtx__spent_watch_over_limit__droppe
     REQUIRE_NO_THROW_TRUE(rpc("notifyreceived", std::format(R"([["{}"]])", found_address)).at("result").is_null());
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
 
     notify(node::chases::organized{ 10 });

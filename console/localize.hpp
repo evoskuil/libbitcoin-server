@@ -128,7 +128,6 @@
 // --information
 #define BS_INFORMATION_START \
     "Configuration...\n" \
-    "   dirty         :{:d}\n" \
     "   interval      :{}"
 #define BS_INFORMATION_SIZES \
     "Body sizes...\n" \
@@ -139,6 +138,12 @@
     "   output        :{}\n" \
     "   ins           :{}\n" \
     "   outs          :{}\n" \
+    "   spend         :{}\n" \
+    "   points0       :{}\n" \
+    "   points1       :{}\n" \
+    "   spender       :{}\n" \
+    "   conflict      :{}\n" \
+    "   address       :{}\n" \
     "   ecdsa0        :{}\n" \
     "   ecdsa1        :{}\n" \
     "   schnorr0      :{}\n" \
@@ -151,14 +156,11 @@
     "   silent1       :{}\n" \
     "   silent0_prefix:{}\n" \
     "   silent1_prefix:{}\n" \
-    "   prevout       :{}\n" \
-    "   duplicate     :{}\n" \
     "   strong        :{}\n" \
     "   scan          :{}\n" \
     "   scan_prefix   :{}\n" \
     "   pool          :{}\n" \
     "   wtxid         :{}\n" \
-    "   spends        :{}\n" \
     "   filter_bk     :{}\n" \
     "   filter_tx     :{}"
 #define BS_INFORMATION_RECORDS \
@@ -167,6 +169,11 @@
     "   tx            :{}\n" \
     "   ins           :{}\n" \
     "   outs          :{}\n" \
+    "   spend         :{}\n" \
+    "   points0       :{}\n" \
+    "   points1       :{}\n" \
+    "   conflict      :{}\n" \
+    "   address       :{}\n" \
     "   ecdsa0        :{}\n" \
     "   ecdsa1        :{}\n" \
     "   schnorr0      :{}\n" \
@@ -179,24 +186,21 @@
     "   silent1       :{}\n" \
     "   silent0_prefix:{}\n" \
     "   silent1_prefix:{}\n" \
-    "   duplicate     :{}\n" \
     "   scan          :{}\n" \
     "   scan_prefix   :{}\n" \
     "   pool          :{}\n" \
     "   wtxid         :{}\n" \
-    "   spends        :{}\n" \
     "   filter_bk     :{}"
 #define BS_INFORMATION_BUCKETS \
     "Head buckets...\n" \
     "   header        :{}\n" \
     "   txs           :{}\n" \
     "   tx            :{}\n" \
-    "   ins           :{}\n" \
-    "   outs          :{}\n" \
+    "   spender       :{}\n" \
+    "   conflict      :{}\n" \
+    "   address       :{}\n" \
     "   candidate     :{}\n" \
     "   confirmed     :{}\n" \
-    "   prevout       :{}\n" \
-    "   duplicate     :{}\n" \
     "   strong        :{}\n" \
     "   scan          :{}\n" \
     "   state         :{}\n" \
@@ -208,15 +212,15 @@
     "Load factors...\n" \
     "   header        :{}\n" \
     "   tx            :{}\n" \
-    "   ins           :{}\n" \
+    "   conflict      :{}\n" \
     "   pool          :{}\n" \
     "   wtxid         :{}"
-#define BS_INFORMATION_LOAD_FACTORS_OUTS \
+#define BS_INFORMATION_LOAD_FACTORS_ADDRESS \
     "Load factors...\n" \
     "   header        :{}\n" \
     "   tx            :{}\n" \
-    "   ins           :{}\n" \
-    "   outs          :{}\n" \
+    "   conflict      :{}\n" \
+    "   address       :{}\n" \
     "   pool          :{}\n" \
     "   wtxid         :{}"
 #define BS_INFORMATION_PROGRESS_START \

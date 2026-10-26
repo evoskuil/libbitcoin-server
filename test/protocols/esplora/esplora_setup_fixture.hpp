@@ -167,7 +167,7 @@ struct esplora_no_address_setup_fixture
             return test::setup_ten_block_store(query);
         }, [](server::configuration& config)
         {
-            config.database.outs.buckets = 0;
+            config.database.address.buckets = 0;
         })
     {
     }
@@ -208,7 +208,8 @@ struct esplora_misheighted_setup_fixture
       : esplora_setup_fixture([](test::query_t& query)
         {
             return test::setup_three_block_store(query) &&
-                query.set(test::block3, database::context{ 0, 9, 0 }, {}, false, false);
+                query.set(test::block3, database::context{ 0, 9, 0 }, {}, false, false) &&
+                test::bind(query, test::block3);
         })
     {
     }

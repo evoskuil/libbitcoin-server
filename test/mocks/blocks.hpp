@@ -103,6 +103,10 @@ extern const system::chain::transaction tx2b;
 extern const system::chain::block block1c;
 extern const system::chain::transaction tx1c;
 
+/// Bind each resolvable input of the archived tx/block (as validation would).
+bool bind(query_t& query, const system::chain::transaction& tx) NOEXCEPT;
+bool bind(query_t& query, const system::chain::block& block) NOEXCEPT;
+
 bool setup_ten_block_store(query_t& query, uint32_t top_flags=0) NOEXCEPT;
 bool setup_three_block_store(query_t& query) NOEXCEPT;
 bool setup_three_block_witness_store(query_t& query) NOEXCEPT;

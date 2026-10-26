@@ -133,7 +133,6 @@ void executor::dump_options() const
 void executor::dump_configuration() const
 {
     logger(std::format(BS_INFORMATION_START,
-        store_.is_dirty(),
         query_.interval_span()));
 }
 
@@ -147,6 +146,12 @@ void executor::dump_body_sizes() const
         query_.output_body_size(),
         query_.ins_body_size(),
         query_.outs_body_size(),
+        query_.spend_body_size(),
+        query_.points0_body_size(),
+        query_.points1_body_size(),
+        query_.spender_body_size(),
+        query_.conflict_body_size(),
+        query_.address_body_size(),
         query_.ecdsa0_body_size(),
         query_.ecdsa1_body_size(),
         query_.schnorr0_body_size(),
@@ -159,14 +164,11 @@ void executor::dump_body_sizes() const
         query_.silent1_body_size(),
         query_.silent0_prefix_body_size(),
         query_.silent1_prefix_body_size(),
-        query_.prevout_body_size(),
-        query_.duplicate_body_size(),
         query_.strong_body_size(),
         query_.scan_body_size(),
         query_.scan_prefix_body_size(),
         query_.pool_body_size(),
         query_.wtxid_body_size(),
-        query_.spends_body_size(),
         query_.filter_bk_body_size(),
         query_.filter_tx_body_size()));
 }
@@ -178,6 +180,11 @@ void executor::dump_records() const
         query_.tx_records(),
         query_.ins_records(),
         query_.outs_records(),
+        query_.spend_records(),
+        query_.points0_records(),
+        query_.points1_records(),
+        query_.conflict_records(),
+        query_.address_records(),
         query_.ecdsa0_records(),
         query_.ecdsa1_records(),
         query_.schnorr0_records(),
@@ -190,12 +197,10 @@ void executor::dump_records() const
         query_.silent1_records(),
         query_.silent0_prefix_records(),
         query_.silent1_prefix_records(),
-        query_.duplicate_records(),
         query_.scan_records(),
         query_.scan_prefix_records(),
         query_.pool_records(),
         query_.wtxid_records(),
-        query_.spends_records(),
         query_.filter_bk_records()));
 }
 
@@ -205,12 +210,11 @@ void executor::dump_buckets() const
         query_.header_buckets(),
         query_.txs_buckets(),
         query_.tx_buckets(),
-        query_.ins_buckets(),
-        query_.outs_buckets(),
+        query_.spender_buckets(),
+        query_.conflict_buckets(),
+        query_.address_buckets(),
         query_.candidate_buckets(),
         query_.confirmed_buckets(),
-        query_.prevout_buckets(),
-        query_.duplicate_buckets(),
         query_.strong_buckets(),
         query_.scan_buckets(),
         query_.state_buckets(),
@@ -227,22 +231,22 @@ void executor::dump_load_factors() const
         return is_zero(buckets) ? 0.0 : to_double(records) / buckets;
     };
 
-    const auto header = load(query_.header_records(), query_.header_buckets());
-    const auto tx     = load(query_.tx_records(), query_.tx_buckets());
-    const auto ins    = load(query_.ins_records(), query_.ins_buckets());
-    const auto pool   = load(query_.pool_records(), query_.pool_buckets());
-    const auto wtxid  = load(query_.wtxid_records(), query_.wtxid_buckets());
+    const auto header   = load(query_.header_records(), query_.header_buckets());
+    const auto tx       = load(query_.tx_records(), query_.tx_buckets());
+    const auto conflict = load(query_.conflict_records(), query_.conflict_buckets());
+    const auto pool     = load(query_.pool_records(), query_.pool_buckets());
+    const auto wtxid    = load(query_.wtxid_records(), query_.wtxid_buckets());
 
     if (query_.address_enabled())
     {
-        const auto outs = load(query_.outs_records(), query_.outs_buckets());
-        logger(std::format(BS_INFORMATION_LOAD_FACTORS_OUTS,
-            header, tx, ins, outs, pool, wtxid));
+        const auto address = load(query_.address_records(), query_.address_buckets());
+        logger(std::format(BS_INFORMATION_LOAD_FACTORS_ADDRESS,
+            header, tx, conflict, address, pool, wtxid));
         return;
     }
 
     logger(std::format(BS_INFORMATION_LOAD_FACTORS,
-        header, tx, ins, pool, wtxid));
+        header, tx, conflict, pool, wtxid));
 }
 
 void executor::dump_progress() const

@@ -522,6 +522,7 @@ static const auto block13 = encode_hash(test::mock_block13.hash());
 BOOST_AUTO_TEST_CASE(bitcoind_rest__spenttxouts_bin__block13__undo_framing)
 {
     BOOST_REQUIRE(query_.set(test::mock_block13, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block13));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block13.hash()), true));
 
     const auto expected = build_chunk({ base16_chunk("030001"), spent3.to_data(), base16_chunk("01"), spent13.to_data() });
@@ -531,6 +532,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rest__spenttxouts_bin__block13__undo_framing)
 BOOST_AUTO_TEST_CASE(bitcoind_rest__spenttxouts_hex__block13__undo_framing)
 {
     BOOST_REQUIRE(query_.set(test::mock_block13, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block13));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block13.hash()), true));
 
     const auto expected = "030001" + encode_base16(spent3.to_data()) + "01" + encode_base16(spent13.to_data()) + "\n";
@@ -540,6 +542,7 @@ BOOST_AUTO_TEST_CASE(bitcoind_rest__spenttxouts_hex__block13__undo_framing)
 BOOST_AUTO_TEST_CASE(bitcoind_rest__spenttxouts_json__block13__prevouts_per_tx)
 {
     BOOST_REQUIRE(query_.set(test::mock_block13, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block13));
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block13.hash()), true));
 
     const auto result = rest_json("/rest/spenttxouts/" + block13 + ".json");

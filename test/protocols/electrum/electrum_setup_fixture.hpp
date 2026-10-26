@@ -306,6 +306,7 @@ struct electrum_duplicate_setup_fixture
         {
             return test::setup_ten_block_store(query) &&
                 query.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false) &&
+                test::bind(query, test::mock_block10) &&
                 query.set(*test::mock_block10.transactions_ptr()->at(1));
         })
     {

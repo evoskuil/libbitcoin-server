@@ -164,7 +164,7 @@ struct native_no_address_setup_fixture
             return test::setup_ten_block_store(query);
         }, [](server::configuration& config)
         {
-            config.database.outs.buckets = 0;
+            config.database.address.buckets = 0;
         })
     {
     }

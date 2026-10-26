@@ -144,8 +144,11 @@ BOOST_AUTO_TEST_CASE(native__ws_top_subscribe__progressive_notify__expected)
     BOOST_REQUIRE(!ws_upgrade());
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.set(test::mock_block11, database::context{ 0, 11, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block11));
     BOOST_REQUIRE(query_.set(test::mock_block12, database::context{ 0, 12, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block12));
 
     const auto response = ws_get_json("/v1/top/subscribe?format=json");
     BOOST_REQUIRE(response.is_int64());
@@ -165,8 +168,11 @@ BOOST_AUTO_TEST_CASE(native__ws_top_subscribe__reorganized__emits_top_height)
     BOOST_REQUIRE(!ws_upgrade());
 
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE(query_.set(test::mock_block11, database::context{ 0, 11, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block11));
     BOOST_REQUIRE(query_.set(test::mock_block12, database::context{ 0, 12, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block12));
 
     const auto response = ws_get_json("/v1/top/subscribe?format=json");
     BOOST_REQUIRE(response.is_int64());
@@ -185,6 +191,7 @@ BOOST_AUTO_TEST_CASE(native__ws_top_subscribe__notify_data__expected)
 {
     BOOST_REQUIRE(!ws_upgrade());
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE_EQUAL(ws_get_data("/v1/top/subscribe?format=data"), base16_chunk("09"));
 
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
@@ -197,6 +204,7 @@ BOOST_AUTO_TEST_CASE(native__ws_top_subscribe__notify_json__expected)
 {
     BOOST_REQUIRE(!ws_upgrade());
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE_EQUAL(ws_get_json("/v1/top/subscribe?format=json").as_int64(), 9);
 
     BOOST_REQUIRE(query_.push_confirmed(query_.to_header(test::mock_block10.hash()), true));
@@ -607,6 +615,7 @@ BOOST_AUTO_TEST_CASE(native__ws_block_subscribe__notify_text__expected)
 {
     BOOST_REQUIRE(!ws_upgrade());
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE_EQUAL(ws_get_text("/v1/block/subscribe?format=text"), encode_base16(test::block9_hash));
 
     const auto link = query_.to_header(test::mock_block10.hash());
@@ -620,6 +629,7 @@ BOOST_AUTO_TEST_CASE(native__ws_block_subscribe__notify_data__expected)
 {
     BOOST_REQUIRE(!ws_upgrade());
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE_EQUAL(ws_get_data("/v1/block/subscribe?format=data"), to_chunk(test::block9_hash));
 
     const auto link = query_.to_header(test::mock_block10.hash());
@@ -633,6 +643,7 @@ BOOST_AUTO_TEST_CASE(native__ws_block_subscribe__notify_json__expected)
 {
     BOOST_REQUIRE(!ws_upgrade());
     BOOST_REQUIRE(query_.set(test::mock_block10, database::context{ 0, 10, 0 }, {}, false, false));
+    BOOST_REQUIRE(test::bind(query_, test::mock_block10));
     BOOST_REQUIRE_EQUAL(ws_get_json("/v1/block/subscribe?format=json").as_string(), encode_hash(test::block9_hash));
 
     const auto link = query_.to_header(test::mock_block10.hash());
