@@ -184,8 +184,11 @@ parser::parser(system::chain::selection context,
 
     configured.database.strong.buckets = 13'598'717;
     configured.database.strong.rate = 1;
-    configured.database.spender.buckets = 37'419'291;
+    configured.database.spender.expected = 3'741'929'086;
+    configured.database.spender.size = 449'031'491;
     configured.database.spender.rate = 1;
+    configured.database.contested.buckets = 9'354'823;
+    configured.database.contested.rate = 1;
     configured.database.scan.buckets = 950'001;
     configured.database.scan.size = 0;
     configured.database.scan.rate = 1;
@@ -209,16 +212,13 @@ parser::parser(system::chain::selection context,
     configured.database.state.buckets = 950'001;
     configured.database.state.rate = 1;
 
-    // pool (disabled by zero buckets), conflict expected is 5% of pool
+    // pool (disabled by zero buckets)
     configured.database.pool.expected = 10'000'000;
     configured.database.pool.size = 0;
     configured.database.pool.rate = 1;
     configured.database.wtxid.expected = 10'000'000;
     configured.database.wtxid.size = 0;
     configured.database.wtxid.rate = 1;
-    configured.database.conflict.expected = 500'000;
-    configured.database.conflict.size = 0;
-    configured.database.conflict.rate = 1;
 
     // optional
 
@@ -260,9 +260,9 @@ void parser::derive_buckets() NOEXCEPT
         database.address.buckets = table::address::derive_buckets(
             database.address.expected, address_contested, address_target);
 
-    if (!is_configured("table.conflict.buckets"))
-        database.conflict.buckets = table::conflict::derive_buckets(
-            database.conflict.expected, contested, target);
+    if (!is_configured("table.spender.buckets"))
+        database.spender.buckets = table::spender::derive_buckets(
+            database.spender.expected, address_contested, address_target);
 
     if (!is_configured("table.pool.buckets"))
         database.pool.buckets = table::pool::derive_buckets(
@@ -2537,38 +2537,38 @@ options_metadata parser::load_settings() THROWS
         "The percentage expansion of the address table body, defaults to {}."
     )
 
-    /* table.conflict */
-    (
-        "table.conflict.buckets",
-        setting<uint32_t>(&configured.database.conflict.buckets),
-        "The number of buckets in the conflict table head, dynamic default."
-    )
-    (
-        "table.conflict.expected",
-        setting<uint64_t>(&configured.database.conflict.expected),
-        "The expected element count of the conflict table, defaults to {}."
-    )
-    (
-        "table.conflict.size",
-        setting<uint64_t>(&configured.database.conflict.size),
-        "The minimum allocation of the conflict table body, defaults to {}."
-    )
-    (
-        "table.conflict.rate",
-        setting<uint16_t>(&configured.database.conflict.rate),
-        "The percentage expansion of the conflict table body, defaults to {}."
-    )
-
     /* table.spender */
     (
         "table.spender.buckets",
         setting<uint32_t>(&configured.database.spender.buckets),
-        "The number of buckets provisioned in the spender table head, defaults to {}."
+        "The number of buckets in the spender table head, dynamic default."
+    )
+    (
+        "table.spender.expected",
+        setting<uint64_t>(&configured.database.spender.expected),
+        "The expected element count of the spender table, defaults to {}."
+    )
+    (
+        "table.spender.size",
+        setting<uint64_t>(&configured.database.spender.size),
+        "The minimum allocation of the spender table body, defaults to {}."
     )
     (
         "table.spender.rate",
         setting<uint16_t>(&configured.database.spender.rate),
-        "The percentage expansion of the spender table head, defaults to {}."
+        "The percentage expansion of the spender table body, defaults to {}."
+    )
+
+    /* table.contested */
+    (
+        "table.contested.buckets",
+        setting<uint32_t>(&configured.database.contested.buckets),
+        "The number of buckets provisioned in the contested table head, defaults to {}."
+    )
+    (
+        "table.contested.rate",
+        setting<uint16_t>(&configured.database.contested.rate),
+        "The percentage expansion of the contested table head, defaults to {}."
     )
 
     /* table.scan */

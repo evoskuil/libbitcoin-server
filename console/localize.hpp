@@ -143,7 +143,6 @@
     "   points1       :{}\n" \
     "   spender       :{}\n" \
     "   contested     :{}\n" \
-    "   conflict      :{}\n" \
     "   address       :{}\n" \
     "   ecdsa0        :{}\n" \
     "   ecdsa1        :{}\n" \
@@ -173,7 +172,7 @@
     "   spend         :{}\n" \
     "   points0       :{}\n" \
     "   points1       :{}\n" \
-    "   conflict      :{}\n" \
+    "   spender       :{}\n" \
     "   address       :{}\n" \
     "   ecdsa0        :{}\n" \
     "   ecdsa1        :{}\n" \
@@ -199,7 +198,6 @@
     "   tx            :{}\n" \
     "   spender       :{}\n" \
     "   contested     :{}\n" \
-    "   conflict      :{}\n" \
     "   address       :{}\n" \
     "   candidate     :{}\n" \
     "   confirmed     :{}\n" \
@@ -214,14 +212,14 @@
     "Load factors...\n" \
     "   header        :{}\n" \
     "   tx            :{}\n" \
-    "   conflict      :{}\n" \
+    "   spender       :{}\n" \
     "   pool          :{}\n" \
     "   wtxid         :{}"
 #define BS_INFORMATION_LOAD_FACTORS_ADDRESS \
     "Load factors...\n" \
     "   header        :{}\n" \
     "   tx            :{}\n" \
-    "   conflict      :{}\n" \
+    "   spender       :{}\n" \
     "   address       :{}\n" \
     "   pool          :{}\n" \
     "   wtxid         :{}"

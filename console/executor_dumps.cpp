@@ -151,7 +151,6 @@ void executor::dump_body_sizes() const
         query_.points1_body_size(),
         query_.spender_body_size(),
         query_.contested_body_size(),
-        query_.conflict_body_size(),
         query_.address_body_size(),
         query_.ecdsa0_body_size(),
         query_.ecdsa1_body_size(),
@@ -184,7 +183,7 @@ void executor::dump_records() const
         query_.spend_records(),
         query_.points0_records(),
         query_.points1_records(),
-        query_.conflict_records(),
+        query_.spender_records(),
         query_.address_records(),
         query_.ecdsa0_records(),
         query_.ecdsa1_records(),
@@ -213,7 +212,6 @@ void executor::dump_buckets() const
         query_.tx_buckets(),
         query_.spender_buckets(),
         query_.contested_buckets(),
-        query_.conflict_buckets(),
         query_.address_buckets(),
         query_.candidate_buckets(),
         query_.confirmed_buckets(),
@@ -235,7 +233,7 @@ void executor::dump_load_factors() const
 
     const auto header   = load(query_.header_records(), query_.header_buckets());
     const auto tx       = load(query_.tx_records(), query_.tx_buckets());
-    const auto conflict = load(query_.conflict_records(), query_.conflict_buckets());
+    const auto spender  = load(query_.spender_records(), query_.spender_buckets());
     const auto pool     = load(query_.pool_records(), query_.pool_buckets());
     const auto wtxid    = load(query_.wtxid_records(), query_.wtxid_buckets());
 
@@ -243,12 +241,12 @@ void executor::dump_load_factors() const
     {
         const auto address = load(query_.address_records(), query_.address_buckets());
         logger(std::format(BS_INFORMATION_LOAD_FACTORS_ADDRESS,
-            header, tx, conflict, address, pool, wtxid));
+            header, tx, spender, address, pool, wtxid));
         return;
     }
 
     logger(std::format(BS_INFORMATION_LOAD_FACTORS,
-        header, tx, conflict, pool, wtxid));
+        header, tx, spender, pool, wtxid));
 }
 
 void executor::dump_progress() const

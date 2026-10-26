@@ -146,7 +146,7 @@ void executor::scan_buckets() const
 
     scan_buckets("header", store_.header, query_.header_records());
     scan_buckets("tx", store_.tx, query_.tx_records());
-    scan_buckets("conflict", store_.conflict, query_.conflict_records());
+    scan_buckets("spender", store_.spender, query_.spender_records());
     scan_buckets("address", store_.address, query_.address_records());
     scan_buckets("pool", store_.pool, query_.pool_records());
     scan_buckets("wtxid", store_.wtxid, query_.wtxid_records());
