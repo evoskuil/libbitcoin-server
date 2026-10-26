@@ -182,7 +182,7 @@ parser::parser(system::chain::selection context,
     configured.database.confirmed.buckets = 950'001;
     configured.database.confirmed.rate = 1;
 
-    configured.database.strong.buckets = 1'359'871'695;
+    configured.database.strong.buckets = 13'598'717;
     configured.database.strong.rate = 1;
     configured.database.spender.buckets = 37'419'291;
     configured.database.spender.rate = 1;
