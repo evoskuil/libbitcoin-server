@@ -142,6 +142,7 @@
     "   points0       :{}\n" \
     "   points1       :{}\n" \
     "   spender       :{}\n" \
+    "   contested     :{}\n" \
     "   conflict      :{}\n" \
     "   address       :{}\n" \
     "   ecdsa0        :{}\n" \
@@ -197,6 +198,7 @@
     "   txs           :{}\n" \
     "   tx            :{}\n" \
     "   spender       :{}\n" \
+    "   contested     :{}\n" \
     "   conflict      :{}\n" \
     "   address       :{}\n" \
     "   candidate     :{}\n" \
