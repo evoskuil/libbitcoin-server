@@ -189,6 +189,8 @@ parser::parser(system::chain::selection context,
     configured.database.spender.rate = 1;
     configured.database.contested.buckets = 9'354'823;
     configured.database.contested.rate = 1;
+    configured.database.banked.buckets = 4'204'335;
+    configured.database.banked.rate = 1;
     configured.database.scan.buckets = 950'001;
     configured.database.scan.size = 0;
     configured.database.scan.rate = 1;
@@ -2569,6 +2571,18 @@ options_metadata parser::load_settings() THROWS
         "table.contested.rate",
         setting<uint16_t>(&configured.database.contested.rate),
         "The percentage expansion of the contested table head, defaults to {}."
+    )
+
+    /* table.banked */
+    (
+        "table.banked.buckets",
+        setting<uint32_t>(&configured.database.banked.buckets),
+        "The number of buckets provisioned in the banked table head, defaults to {}."
+    )
+    (
+        "table.banked.rate",
+        setting<uint16_t>(&configured.database.banked.rate),
+        "The percentage expansion of the banked table head, defaults to {}."
     )
 
     /* table.scan */

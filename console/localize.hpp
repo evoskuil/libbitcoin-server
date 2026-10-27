@@ -143,6 +143,7 @@
     "   points1       :{}\n" \
     "   spender       :{}\n" \
     "   contested     :{}\n" \
+    "   banked        :{}\n" \
     "   address       :{}\n" \
     "   ecdsa0        :{}\n" \
     "   ecdsa1        :{}\n" \
@@ -198,6 +199,7 @@
     "   tx            :{}\n" \
     "   spender       :{}\n" \
     "   contested     :{}\n" \
+    "   banked        :{}\n" \
     "   address       :{}\n" \
     "   candidate     :{}\n" \
     "   confirmed     :{}\n" \
