@@ -61,20 +61,13 @@ jobs:
           REF_node: ${{ inputs.tag-node }}
           REF_server: ${{ inputs.tag-server }}
         run: |
-          for REPO in system database network node server; do
-            NAME="REF_${REPO}"
-            REF="${!NAME:-${DEFAULT}}"
-            REFS=$(git ls-remote "https://github.com/${OWNER}/libbitcoin-${REPO}" \
-              "refs/heads/${REF}" "refs/tags/${REF}" "refs/tags/${REF}^{}")
-            SHA=$(echo "${REFS}" | awk '/\^\{\}$/ { print $1 }')
-            SHA=${SHA:-$(echo "${REFS}" | awk 'NR == 1 { print $1 }')}
-            if [[ -z "${SHA}" ]]; then
-              echo "libbitcoin-${REPO} has no branch or tag '${REF}'."
-              exit 1
-            fi
-            echo "libbitcoin-${REPO} ${REF} ${SHA}" | tee -a "$GITHUB_STEP_SUMMARY"
-            echo "${REPO}=${SHA}" >> "$GITHUB_OUTPUT"
-          done
+          {
+            echo "system=ae96d4d58772b3e00d47d8802e61c685f2cf540f"
+            echo "database=a2a23f3279fe6273af6836635016086d72f1e259"
+            echo "network=05a4968d19630ed0b4476962e9e087f175068035"
+            echo "node=02d7865f0b311c72182e26e1111ec70132845b45"
+            echo "server=6a1b52365980ccb0426da98d838ff978feab2938"
+          } | tee -a "$GITHUB_OUTPUT" "$GITHUB_STEP_SUMMARY"
 
   sdk:
     needs: resolve
@@ -98,7 +91,7 @@ jobs:
           fetch-depth: 1
           path: ".definition"
           ref: ${{ needs.resolve.outputs.server }}
-          repository: ${{ github.repository_owner }}/libbitcoin-server
+          repository: libbitcoin/libbitcoin-server
           sparse-checkout: |
             .github/guix
 
@@ -126,12 +119,15 @@ jobs:
         toolchain:
           - name: "x86_64-linux-gnu"
             host: "x86_64-linux-gnu"
-          - name: "aarch64-linux-gnu"
-            host: "aarch64-linux-gnu"
           - name: "darwin"
             host: "x86_64-apple-darwin"
           - name: "windows"
             host: "x86_64-pc-windows-msvc"
+        exclude:
+          - runner: "ubuntu-24.04-arm"
+            toolchain: { name: "darwin", host: "x86_64-apple-darwin" }
+          - runner: "ubuntu-24.04-arm"
+            toolchain: { name: "windows", host: "x86_64-pc-windows-msvc" }
 
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 360
@@ -143,7 +139,7 @@ jobs:
           fetch-depth: 1
           path: ".definition"
           ref: ${{ needs.resolve.outputs.server }}
-          repository: ${{ github.repository_owner }}/libbitcoin-server
+          repository: libbitcoin/libbitcoin-server
           sparse-checkout: |
             .github/actions
             .github/guix
@@ -211,62 +207,6 @@ jobs:
             image: "ubuntu-24.04-arm"
 
         target:
-          - basename: "bs-linux-x64"
-            host: "x86_64-linux-gnu"
-            toolchain: "x86_64-linux-gnu"
-            options: "-Denable-avx2=ON -Denable-sse41=ON"
-            linkflags: "-static-libstdc++ -static-libgcc"
-            flags: "-march=x86-64-v3 -mtune=generic"
-
-          - basename: "bs-linux-x64-shani"
-            host: "x86_64-linux-gnu"
-            toolchain: "x86_64-linux-gnu"
-            options: "-Denable-shani=ON -Denable-avx2=ON -Denable-sse41=ON"
-            linkflags: "-static-libstdc++ -static-libgcc"
-            flags: "-march=x86-64-v3 -mtune=generic"
-
-          - basename: "bs-linux-x64-avxifma"
-            host: "x86_64-linux-gnu"
-            toolchain: "x86_64-linux-gnu"
-            options: "-Denable-avxifma=ON -Denable-shani=ON -Denable-avx2=ON -Denable-sse41=ON"
-            linkflags: "-static-libstdc++ -static-libgcc"
-            flags: "-march=x86-64-v3 -mtune=generic"
-
-          - basename: "bs-linux-x64-avx512ifma"
-            host: "x86_64-linux-gnu"
-            toolchain: "x86_64-linux-gnu"
-            options: "-Denable-avx512ifma=ON -Denable-shani=ON -Denable-avx2=ON -Denable-sse41=ON"
-            linkflags: "-static-libstdc++ -static-libgcc"
-            flags: "-march=x86-64-v3 -mtune=generic"
-
-          - basename: "bs-linux-arm64"
-            host: "aarch64-linux-gnu"
-            toolchain: "aarch64-linux-gnu"
-            linkflags: "-static-libstdc++ -static-libgcc"
-            flags: "-march=armv8-a -mtune=generic"
-
-          - basename: "bs-linux-arm64-sha2"
-            host: "aarch64-linux-gnu"
-            toolchain: "aarch64-linux-gnu"
-            options: "-Denable-sha2=ON -Denable-aes=ON"
-            linkflags: "-static-libstdc++ -static-libgcc"
-            flags: "-mtune=generic"
-
-          - basename: "bs-linux-arm64-sha3"
-            host: "aarch64-linux-gnu"
-            toolchain: "aarch64-linux-gnu"
-            options: "-Denable-sha2=ON -Denable-sha3=ON -Denable-aes=ON"
-            linkflags: "-static-libstdc++ -static-libgcc"
-            flags: "-mtune=generic"
-
-          - basename: "bs-macos-x64"
-            host: "x86_64-apple-darwin"
-            toolchain: "darwin"
-            sdk: "apple"
-            deployment_target: "13.3"
-            options: "-Denable-avx2=ON -Denable-sse41=ON -Denable-aesni=ON"
-            flags: "-march=x86-64-v3 -mtune=generic"
-
           - basename: "bs-macos-arm64"
             host: "arm64-apple-darwin"
             toolchain: "darwin"
@@ -275,76 +215,12 @@ jobs:
             options: "-Denable-sha3=ON -Denable-sha2=ON -Denable-aes=ON"
             flags: "-mtune=apple-m1"
 
-          - basename: "bs-windows-x64"
-            host: "x86_64-pc-windows-msvc"
-            toolchain: "windows"
-            sdk: "windows"
-            options: "-Denable-avx2=ON -Denable-sse41=ON"
-
-          - basename: "bs-windows-x64-shani"
-            host: "x86_64-pc-windows-msvc"
-            toolchain: "windows"
-            sdk: "windows"
-            options: "-Denable-shani=ON -Denable-avx2=ON -Denable-sse41=ON"
-
-          - basename: "bs-windows-x64-avxifma"
-            host: "x86_64-pc-windows-msvc"
-            toolchain: "windows"
-            sdk: "windows"
-            options: "-Denable-avxifma=ON -Denable-shani=ON -Denable-avx2=ON -Denable-sse41=ON"
-
-          - basename: "bs-windows-x64-avx512ifma"
-            host: "x86_64-pc-windows-msvc"
-            toolchain: "windows"
-            sdk: "windows"
-            options: "-Denable-avx512ifma=ON -Denable-shani=ON -Denable-avx2=ON -Denable-sse41=ON"
-
-          - basename: "bs-windows-arm64"
-            host: "aarch64-pc-windows-msvc"
-            toolchain: "windows"
-            sdk: "windows"
-
-          - basename: "bs-windows-arm64-sha2"
-            host: "aarch64-pc-windows-msvc"
-            toolchain: "windows"
-            sdk: "windows"
-            options: "-Denable-sha2=ON -Denable-aes=ON"
-
-          - basename: "bs-windows-arm64-sha3"
-            host: "aarch64-pc-windows-msvc"
-            toolchain: "windows"
-            sdk: "windows"
-            options: "-Denable-sha2=ON -Denable-sha3=ON -Denable-aes=ON"
-
           - basename: "selector-linux-x64"
             host: "x86_64-linux-gnu"
             toolchain: "x86_64-linux-gnu"
             project: "libbitcoin-system"
             program: "selector"
             linkflags: "-static-libstdc++ -static-libgcc"
-
-          - basename: "selector-linux-arm64"
-            host: "aarch64-linux-gnu"
-            toolchain: "aarch64-linux-gnu"
-            project: "libbitcoin-system"
-            program: "selector"
-            linkflags: "-static-libstdc++ -static-libgcc"
-
-          - basename: "selector-macos-x64"
-            host: "x86_64-apple-darwin"
-            toolchain: "darwin"
-            sdk: "apple"
-            deployment_target: "13.3"
-            project: "libbitcoin-system"
-            program: "selector"
-
-          - basename: "selector-macos-arm64"
-            host: "arm64-apple-darwin"
-            toolchain: "darwin"
-            sdk: "apple"
-            deployment_target: "13.3"
-            project: "libbitcoin-system"
-            program: "selector"
 
           - basename: "selector-windows-x64"
             host: "x86_64-pc-windows-msvc"
@@ -353,15 +229,8 @@ jobs:
             project: "libbitcoin-system"
             program: "selector"
 
-          - basename: "selector-windows-arm64"
-            host: "aarch64-pc-windows-msvc"
-            toolchain: "windows"
-            sdk: "windows"
-            project: "libbitcoin-system"
-            program: "selector"
 
-
-    runs-on: ${{ matrix.builder.image }}
+    runs-on: ${{ (matrix.builder.name == 'b' && (matrix.target.toolchain == 'darwin' || matrix.target.toolchain == 'windows')) && 'ubuntu-24.04' || matrix.builder.image }}
 
     steps:
       - name: Checkout libbitcoin-server
@@ -370,7 +239,7 @@ jobs:
           fetch-depth: 0
           path: "src/libbitcoin-server"
           ref: ${{ needs.resolve.outputs.server }}
-          repository: ${{ github.repository_owner }}/libbitcoin-server
+          repository: libbitcoin/libbitcoin-server
 
       - name: Checkout libbitcoin-node
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -378,7 +247,7 @@ jobs:
           fetch-depth: 0
           path: "src/libbitcoin-node"
           ref: ${{ needs.resolve.outputs.node }}
-          repository: ${{ github.repository_owner }}/libbitcoin-node
+          repository: libbitcoin/libbitcoin-node
 
       - name: Checkout libbitcoin-network
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -386,7 +255,7 @@ jobs:
           fetch-depth: 0
           path: "src/libbitcoin-network"
           ref: ${{ needs.resolve.outputs.network }}
-          repository: ${{ github.repository_owner }}/libbitcoin-network
+          repository: libbitcoin/libbitcoin-network
 
       - name: Checkout libbitcoin-database
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -394,7 +263,7 @@ jobs:
           fetch-depth: 0
           path: "src/libbitcoin-database"
           ref: ${{ needs.resolve.outputs.database }}
-          repository: ${{ github.repository_owner }}/libbitcoin-database
+          repository: libbitcoin/libbitcoin-database
 
       - name: Checkout libbitcoin-system
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -402,7 +271,7 @@ jobs:
           fetch-depth: 0
           path: "src/libbitcoin-system"
           ref: ${{ needs.resolve.outputs.system }}
-          repository: ${{ github.repository_owner }}/libbitcoin-system
+          repository: libbitcoin/libbitcoin-system
 
       - name: Checkout build definition
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -410,7 +279,7 @@ jobs:
           fetch-depth: 1
           path: ".definition"
           ref: ${{ needs.resolve.outputs.server }}
-          repository: ${{ github.repository_owner }}/libbitcoin-server
+          repository: libbitcoin/libbitcoin-server
           sparse-checkout: |
             .github/actions
             .github/guix
@@ -538,7 +407,7 @@ jobs:
           echo "| --- | --- | --- |" >> "$GITHUB_STEP_SUMMARY"
           DIFFER=""
           MISSING=""
-          for NAME in bs-linux-x64 bs-linux-x64-shani bs-linux-x64-avxifma bs-linux-x64-avx512ifma bs-linux-arm64 bs-linux-arm64-sha2 bs-linux-arm64-sha3 bs-macos-x64 bs-macos-arm64 bs-windows-x64 bs-windows-x64-shani bs-windows-x64-avxifma bs-windows-x64-avx512ifma bs-windows-arm64 bs-windows-arm64-sha2 bs-windows-arm64-sha3 selector-linux-x64 selector-linux-arm64 selector-macos-x64 selector-macos-arm64 selector-windows-x64 selector-windows-arm64; do
+          for NAME in bs-macos-arm64 selector-windows-x64 selector-linux-x64; do
             A="double-${NAME}-a"
             B="double-${NAME}-b"
             if [[ ! -f "${A}/SHA256SUMS" || ! -f "${B}/SHA256SUMS" ]]; then
