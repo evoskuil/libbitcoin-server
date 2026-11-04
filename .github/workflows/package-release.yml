@@ -18,7 +18,38 @@ permissions:
 
 jobs:
 
+  stage:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      actions: read
+
+    steps:
+      - name: Stage test release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag }}
+        run: |
+          mkdir staged
+          for FILE in bs-linux-x64 bs-linux-x64-shani bs-linux-arm64 bs-linux-arm64-sha2 selector-linux-x64 selector-linux-arm64 bs-windows-x64.exe bs-windows-x64-shani.exe bs-windows-arm64.exe bs-windows-arm64-sha2.exe selector-windows-x64.exe selector-windows-arm64.exe bs-macos-x64 bs-macos-arm64; do
+            gh run download 41745735609 --repo libbitcoin/libbitcoin-server --name "${FILE%.exe}" --dir staged
+          done
+          ls -la staged
+          export GNUPGHOME="$(mktemp -d)"
+          gpg --batch --passphrase '' --quick-gen-key "libbitcoin package test" ed25519 sign 1d
+          gpg --batch --armor --export > test-key.asc
+          for FILE in staged/*; do
+            gpg --batch --armor --detach-sign "${FILE}"
+          done
+          ls -la staged
+          gh release create "${TAG}" --repo "${GITHUB_REPOSITORY}" --draft --prerelease \
+            --verify-tag --title "${TAG} package test" --notes "Package Release test." \
+            staged/* test-key.asc
+
   version:
+    needs: stage
     runs-on: ubuntu-latest
 
     outputs:
@@ -68,11 +99,19 @@ jobs:
         with:
           path: 'libbitcoin-server'
 
+      - name: Load test key
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ github.event.inputs.tag }}" --repo "${GITHUB_REPOSITORY}" \
+            --pattern test-key.asc --output test-key.asc
+          { echo "PUBLIC_KEY<<EOF"; cat test-key.asc; echo "EOF"; } >> "$GITHUB_ENV"
+
       - name: Download release binaries
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          PUBLIC_KEY: ${{ vars.PUBLIC_KEY }}
         run: >
           bash libbitcoin-server/.github/packaging/fetch.sh
           "${{ github.event.inputs.tag }}"
@@ -225,11 +264,19 @@ jobs:
         with:
           path: 'libbitcoin-server'
 
+      - name: Load test key
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ github.event.inputs.tag }}" --repo "${GITHUB_REPOSITORY}" \
+            --pattern test-key.asc --output test-key.asc
+          { echo "PUBLIC_KEY<<EOF"; cat test-key.asc; echo "EOF"; } >> "$GITHUB_ENV"
+
       - name: Download release binaries
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          PUBLIC_KEY: ${{ vars.PUBLIC_KEY }}
         run: >
           bash libbitcoin-server/.github/packaging/fetch.sh
           "${{ github.event.inputs.tag }}"
@@ -287,11 +334,19 @@ jobs:
         with:
           path: 'libbitcoin-server'
 
+      - name: Load test key
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ github.event.inputs.tag }}" --repo "${GITHUB_REPOSITORY}" \
+            --pattern test-key.asc --output test-key.asc
+          { echo "PUBLIC_KEY<<EOF"; cat test-key.asc; echo "EOF"; } >> "$GITHUB_ENV"
+
       - name: Download release binaries
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          PUBLIC_KEY: ${{ vars.PUBLIC_KEY }}
         run: >
           bash libbitcoin-server/.github/packaging/fetch.sh
           "${{ github.event.inputs.tag }}"
