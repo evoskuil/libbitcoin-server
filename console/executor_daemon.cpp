@@ -519,7 +519,7 @@ uint32_t executor::create_service(const std::filesystem::path& config,
         return EACCES;
 #elif defined(HAVE_FREEBSD)
     // rc.d requires an executable script, and rc.subr sources the rc.conf.d
-    // file of the same name, which is what enabling the script (sysrc) does.
+    // file of the same name, in which the script is enabled.
     file.close();
     using perms = std::filesystem::perms;
     std::filesystem::permissions(unit, perms::owner_all | perms::group_read |
