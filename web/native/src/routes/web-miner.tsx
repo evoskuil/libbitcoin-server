@@ -1,12 +1,20 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { HashrateChart } from '@/components/hashrate-chart';
-import { MiningSettings, type PageSettings } from '@/components/mining-settings';
+import { MiningSettings, protocolName, type PageSettings } from '@/components/mining-settings';
 import { AddressQRCode } from '@/components/qr-code';
+import { addressToScript } from '@/lib/api/providers/libbitcoin-mapper';
 import { useBlockHeader, useServerConfiguration } from '@/lib/hooks/useBlockchainData';
 import { useNow } from '@/lib/hooks/useNow';
 import { usePageTitle } from '@/lib/hooks/usePageTitle';
-import { miner, type MinerSettings, type MinerState, type Share } from '@/lib/mining/miner';
+import {
+  isTemplate,
+  miner,
+  type MinerProtocol,
+  type MinerSettings,
+  type MinerState,
+  type Share,
+} from '@/lib/mining/miner';
 import {
   formatDifficulty,
   formatDuration,
@@ -22,6 +30,8 @@ import { HEADER_ACTION } from '@/lib/utils/styles';
 const LINK = 'text-accent hover:text-accentSecondary';
 
 const STORAGE_KEY = 'libbitcoin.miner';
+
+const PROTOCOLS: MinerProtocol[] = ['v1', 'v2', 'bitcoind', 'btcd'];
 
 // A share is expected slower than this, in seconds, before a warning shows.
 const SLOW = 60 * 60;
@@ -58,7 +68,7 @@ function load(): PageSettings {
       password: typeof saved.password === 'string' ? saved.password : base.password,
       address: typeof saved.address === 'string' ? saved.address : base.address,
       tag: typeof saved.tag === 'string' ? saved.tag : base.tag,
-      protocol: saved.protocol === 'v2' ? 'v2' : 'v1',
+      protocol: PROTOCOLS.find((value) => value === saved.protocol) ?? 'v1',
       threads:
         typeof saved.threads === 'number' && saved.threads >= 1
           ? Math.min(saved.threads, maximumThreads())
@@ -78,19 +88,31 @@ function save(settings: PageSettings) {
 }
 
 // Mines the node's block templates in this browser, as a client of its stratum
-// v1 service over a websocket. Mining continues across page navigation.
+// v1 or v2 service over a websocket, or of the templates of its bitcoind
+// service over http or of its btcd service over a websocket. Mining continues
+// across page navigation.
 export function WebMinerPage() {
   usePageTitle('Web Miner');
   const state = useSyncExternalStore(miner.subscribe, miner.getSnapshot, miner.getSnapshot);
   const [settings, setSettings] = useState<PageSettings>(load);
   const configuration = useServerConfiguration().data;
-  // Stratum v2 is chosen only where the node advertises it.
-  const v2 = configuration?.server.stratum_v2;
-  const protocol = settings.protocol === 'v2' && v2 ? 'v2' : 'v1';
-  const stratum = protocol === 'v2' ? v2 : configuration?.server.stratum_v1;
-  const advertised = serviceSocketUrl(stratum);
-  const payout = stratum?.payout_address;
-  const coinbaseTag = stratum?.coinbase_tag;
+  // Protocols other than stratum v1 are chosen only where the node advertises
+  // them. A template protocol pays the page's own address.
+  const server = configuration?.server;
+  const services = {
+    v1: server?.stratum_v1,
+    v2: server?.stratum_v2,
+    bitcoind: server?.bitcoind,
+    btcd: server?.btcd,
+  };
+  const protocols = PROTOCOLS.filter((value) => value === 'v1' || services[value] !== undefined);
+  const protocol = protocols.find((value) => value === settings.protocol) ?? 'v1';
+  const template = isTemplate(protocol);
+  const service = services[protocol];
+  const advertised = serviceSocketUrl(service);
+  const payout = template ? undefined : service?.payout_address;
+  const coinbaseTag = template ? undefined : service?.coinbase_tag;
+  const wallet = configuration?.wallet;
   const [editing, setEditing] = useState(false);
   // Events are newer than the last tick of the clock.
   const now = Math.max(useNow(1_000), Date.now());
@@ -107,6 +129,9 @@ export function WebMinerPage() {
     password: page.password,
     threads: page.threads,
     protocol,
+    payout: template && wallet ? addressToScript(page.address, wallet)?.scriptHex : undefined,
+    tag: template ? page.tag : undefined,
+    user: template ? page.worker : undefined,
   });
 
   const toggle = () => {
@@ -146,7 +171,7 @@ export function WebMinerPage() {
           <button
             type="button"
             onClick={toggle}
-            disabled={!running && (!current.url || !current.worker)}
+            disabled={!running && (!current.url || !current.worker || (template && !current.payout))}
             className={`${HEADER_ACTION} disabled:cursor-not-allowed`}
           >
             {running ? 'Stop' : 'Start'}
@@ -167,8 +192,9 @@ export function WebMinerPage() {
         open={editing}
         settings={settings}
         require={{ url: !advertised, address: !payout, tag: !coinbaseTag }}
-        protocols={v2 !== undefined}
-        wallet={configuration?.wallet}
+        protocols={protocols}
+        username={template}
+        wallet={wallet}
         network={configuration?.network}
         maximum={maximumThreads()}
         onSave={onSave}
@@ -205,6 +231,7 @@ function MinerDetail({
   now: number;
 }) {
   const perShare = shareSeconds(state.difficulty, state.hashrate);
+  const template = isTemplate(settings.protocol);
   const insecure =
     globalThis.location?.protocol === 'https:' && settings.url.trim().toLowerCase().startsWith('ws://');
   return (
@@ -219,11 +246,18 @@ function MinerDetail({
       )}
       {insecure && !running && (
         <Notice title="Secure websocket required">
-          A page served over https can only reach a wss:// stratum service. Bind a safe stratum
-          endpoint with a certificate and use its wss:// address.
+          A page served over https can only reach a wss:// service. Bind a safe endpoint with a
+          certificate and use its wss:// address.
         </Notice>
       )}
-      {state.status === 'mining' && state.hashrate > 0 && perShare > SLOW && (
+      {state.status === 'mining' && state.hashrate > 0 && perShare > SLOW && template && (
+        <Notice title="Blocks are out of reach">
+          At {formatHashrate(state.hashrate)} and network difficulty {formatDifficulty(state.difficulty)}{' '}
+          this browser is expected to find a block every {formatDuration(perShare)}. Block templates
+          are mined to the network target, with no shares below it.
+        </Notice>
+      )}
+      {state.status === 'mining' && state.hashrate > 0 && perShare > SLOW && !template && (
         <Notice title="Shares are out of reach">
           At {formatHashrate(state.hashrate)} and difficulty {formatDifficulty(state.difficulty)} this
           browser is expected to find a share every {formatDuration(perShare)}. The share difficulty
@@ -236,7 +270,7 @@ function MinerDetail({
           <Stat label="Hashrate" value={running ? formatHashrate(state.hashrate) : '—'} />
           <Stat label="Difficulty" value={formatDifficulty(state.difficulty)} />
           <Stat
-            label="Per share"
+            label={template ? 'Per block' : 'Per share'}
             value={state.status === 'mining' && state.hashrate > 0 ? formatDuration(perShare) : '—'}
           />
           <Stat label="Accepted" value={formatInteger(state.accepted)} />
@@ -246,10 +280,16 @@ function MinerDetail({
       </div>
 
       <div className="border-accent/30 bg-surface/80 rounded-2xl border p-5">
-        <h3 className="text-accent mb-3 text-lg font-semibold">Recent shares</h3>
+        <h3 className="text-accent mb-3 text-lg font-semibold">{template ? 'Recent blocks' : 'Recent shares'}</h3>
         {state.shares.length === 0 ? (
           <p className="text-textMuted text-sm">
-            {running ? 'No share found yet.' : 'Start mining to submit shares.'}
+            {running
+              ? template
+                ? 'No block found yet.'
+                : 'No share found yet.'
+              : template
+                ? 'Start mining to submit blocks.'
+                : 'Start mining to submit shares.'}
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -311,9 +351,7 @@ function JobPanel({
     <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
       <div className="border-accent/30 bg-surface/80 space-y-4 rounded-xl border p-6">
         <div className="min-w-0">
-          <h2 className="text-accent text-lg font-semibold">
-            {settings.protocol === 'v2' ? 'Stratum v2' : 'Stratum v1'}
-          </h2>
+          <h2 className="text-accent text-lg font-semibold">{protocolName(settings.protocol)}</h2>
           <p className="text-textMuted text-sm break-all">
             <span className="font-mono">{settings.url || '—'}</span> · {formatInteger(settings.threads)} threads
             {state.simd !== undefined && <> · {state.simd ? 'WebAssembly SIMD' : 'JavaScript'}</>}
@@ -334,7 +372,7 @@ function JobPanel({
             <Item label="Network difficulty">{formatDifficulty(job.networkDifficulty)}</Item>
             <Item label="Job">
               <span className="font-mono">{job.id}</span>
-              {job.clean && settings.protocol !== 'v2' && <span className="text-textMuted"> · clean</span>}
+              {job.clean && (settings.protocol ?? 'v1') === 'v1' && <span className="text-textMuted"> · clean</span>}
             </Item>
             <Item label="Received">{formatShortRelativeTime(Math.floor(job.received / 1000), now)}</Item>
             <Item label="Previous block" wide>

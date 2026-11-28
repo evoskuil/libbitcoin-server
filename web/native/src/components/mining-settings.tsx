@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { NetworkParams } from '@/lib/api/client';
 import { isAddress } from '@/lib/api/providers/libbitcoin-mapper';
-import type { MinerSettings } from '@/lib/mining/miner';
+import type { MinerProtocol, MinerSettings } from '@/lib/mining/miner';
 import { closeOnBackdrop } from '@/lib/utils/dialog';
 
 /** Miner settings of the page, with the payout fields the node may supply. */
@@ -17,6 +17,18 @@ export interface RequiredSettings {
   tag: boolean;
 }
 
+const PROTOCOLS: Record<MinerProtocol, string> = {
+  v1: 'Stratum v1',
+  v2: 'Stratum v2',
+  bitcoind: 'bitcoind',
+  btcd: 'btcd',
+};
+
+/** The name of a miner protocol. */
+export function protocolName(protocol: MinerProtocol = 'v1'): string {
+  return PROTOCOLS[protocol];
+}
+
 const INPUT =
   'border-accent/40 bg-surface text-textPrimary placeholder:text-textMuted focus:border-accent focus:ring-accent w-full rounded-md border px-3 py-1.5 text-sm';
 
@@ -29,13 +41,17 @@ export function MiningSettings({
   network,
   maximum,
   protocols,
+  password = true,
+  username = false,
   onSave,
   onClose,
 }: {
   open: boolean;
   settings: PageSettings;
   require: RequiredSettings;
-  protocols?: boolean;
+  protocols: MinerProtocol[];
+  password?: boolean;
+  username?: boolean;
   wallet?: NetworkParams;
   network?: string;
   maximum: number;
@@ -92,22 +108,25 @@ export function MiningSettings({
         <h2 id="mining-settings-title" className="text-accent text-lg font-semibold">
           Settings
         </h2>
-        {protocols && (
+        {protocols.length > 1 && (
           <Field label="Protocol">
             <select
               className={INPUT}
               value={draft.protocol ?? 'v1'}
               onChange={(event) => {
-                change('protocol', event.target.value === 'v2' ? 'v2' : 'v1');
+                change('protocol', protocols.find((value) => value === event.target.value) ?? 'v1');
               }}
             >
-              <option value="v1">Stratum v1</option>
-              <option value="v2">Stratum v2</option>
+              {protocols.map((value) => (
+                <option key={value} value={value}>
+                  {protocolName(value)}
+                </option>
+              ))}
             </select>
           </Field>
         )}
         {require.url && (
-          <Field label="Stratum service">
+          <Field label="Service">
             <input
               className={INPUT}
               value={draft.url}
@@ -146,9 +165,9 @@ export function MiningSettings({
             />
           </Field>
         )}
-        <div className={require.address ? '' : 'grid gap-4 sm:grid-cols-[minmax(0,1fr)_7rem]'}>
-          {!require.address && (
-            <Field label="Worker">
+        <div className={require.address && !username ? '' : 'grid gap-4 sm:grid-cols-[minmax(0,1fr)_7rem]'}>
+          {(!require.address || username) && (
+            <Field label={username ? 'Username' : 'Worker'}>
               <input
                 className={INPUT}
                 value={draft.worker}
@@ -172,18 +191,20 @@ export function MiningSettings({
             />
           </Field>
         </div>
-        <Field label="Password">
-          <input
-            className={INPUT}
-            type="password"
-            value={draft.password}
-            autoComplete="off"
-            placeholder="optional"
-            onChange={(event) => {
-              change('password', event.target.value);
-            }}
-          />
-        </Field>
+        {password && (
+          <Field label="Password">
+            <input
+              className={INPUT}
+              type="password"
+              value={draft.password}
+              autoComplete="off"
+              placeholder="optional"
+              onChange={(event) => {
+                change('password', event.target.value);
+              }}
+            />
+          </Field>
+        )}
         <div className="flex justify-end gap-3 pt-2">
           <button
             type="button"

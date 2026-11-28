@@ -134,7 +134,8 @@ export function outputAddresses(tx: TxResponse, params: NetworkParams): string[]
   return tx.outputs.flatMap((output) => decodeScriptAddress(output.script, params).address ?? []);
 }
 
-function addressToScript(
+/** The output script of an address of the network of the params. */
+export function addressToScript(
   address: string,
   params: NetworkParams
 ): { scriptHex: string; type: string } | null {

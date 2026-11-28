@@ -10,6 +10,7 @@ import {
   submitSharesStandard,
   type ServerMessage,
 } from './sv2';
+import { blockHex, EXTRANONCE_SIZE, parseTemplate, templateJob, type Template } from './template';
 import {
   bitsTarget,
   buildHeader,
@@ -30,7 +31,12 @@ import {
   type Job,
 } from './stratum';
 
-export type MinerProtocol = 'v1' | 'v2';
+export type MinerProtocol = 'v1' | 'v2' | 'bitcoind' | 'btcd';
+
+// A protocol of block templates (getblocktemplate), mined to the block target.
+export function isTemplate(protocol?: MinerProtocol): boolean {
+  return protocol === 'bitcoind' || protocol === 'btcd';
+}
 
 export interface MinerSettings {
   url: string;
@@ -38,6 +44,11 @@ export interface MinerSettings {
   password: string;
   threads: number;
   protocol?: MinerProtocol;
+  // The coinbase output script (hex) and tag of a template protocol.
+  payout?: string;
+  tag?: string;
+  // The username authenticated with the password (btcd).
+  user?: string;
 }
 
 export interface HashrateSample {
@@ -111,9 +122,16 @@ const ANSWER = 30;
 const RETRY = 5;
 const RETRY_CAP = 60;
 
+// Seconds between template requests, for changes (time, work) not polled.
+const REFRESH = 30;
+
 const SUBSCRIBE = 1;
 const AUTHORIZE = 2;
 const SUGGEST = 3;
+const TEMPLATE = 4;
+const RENEW = 5;
+const AUTHENTICATE = 6;
+const NOTIFY = 7;
 
 const initial: MinerState = {
   status: 'stopped',
@@ -160,6 +178,7 @@ interface Unit {
   job?: Job;
   extranonce2?: string;
   standard?: StandardJob;
+  template?: Template;
 }
 
 // The maximum target of a standard channel, any difficulty the server sets.
@@ -173,10 +192,27 @@ function reason(error: unknown): string {
   return typeof error === 'string' ? error : 'rejected';
 }
 
+// The http url of a service url (ws or wss on the same port).
+function httpUrl(url: string): string {
+  return url.replace(/^ws/i, 'http');
+}
+
+function base64(text: string): string {
+  return btoa(String.fromCodePoint(...new TextEncoder().encode(text)));
+}
+
 class Miner {
   private state: MinerState = initial;
   private listeners = new Set<() => void>();
   private socket?: WebSocket;
+  // Aborts the http requests of a bitcoind connection.
+  private abort?: AbortController;
+  private template?: Template;
+  // A block has been found on the template, so it is not mined further.
+  private solved = false;
+  private height?: number;
+  private renewal?: ReturnType<typeof setInterval>;
+  private templates = 0;
   private workers: Worker[] = [];
   private units = new Map<number, Unit>();
   private assigned = new Map<Worker, number>();
@@ -245,6 +281,12 @@ class Miner {
     this.standardJobs.clear();
     this.previous = undefined;
     this.standard = undefined;
+    this.template = undefined;
+    if (isTemplate(settings.protocol)) {
+      this.connectTemplate(settings);
+      return;
+    }
+
     let socket: WebSocket;
     try {
       socket = new WebSocket(settings.url);
@@ -279,6 +321,10 @@ class Miner {
       this.lose(event.reason ? `Disconnected: ${event.reason}` : 'Disconnected by the server.');
     };
 
+    this.clock();
+  }
+
+  private clock() {
     if (!this.timer) {
       this.timer = setInterval(() => {
         this.sample();
@@ -286,18 +332,239 @@ class Miner {
     }
   }
 
+  private connectTemplate(settings: MinerSettings) {
+    if (settings.protocol === 'btcd') this.connectBtcd(settings);
+    else this.connectBitcoind(settings);
+    this.clock();
+  }
+
+  // bitcoind templates are long polled over http posts, authorized by basic
+  // authentication of each post.
+  private connectBitcoind(settings: MinerSettings) {
+    const abort = new AbortController();
+    this.abort = abort;
+    void this.longpoll(settings, abort.signal);
+    this.renewal = setInterval(() => {
+      void this.call(settings, 'getblocktemplate', [{ rules: ['segwit'] }], abort.signal)
+        .then((message) => this.templated(RENEW, message))
+        .catch(() => undefined);
+    }, REFRESH * 1000);
+  }
+
+  private async longpoll(settings: MinerSettings, signal: AbortSignal) {
+    let longpollid: string | undefined;
+    while (!signal.aborted) {
+      let message: Record<string, unknown>;
+      try {
+        message = await this.call(settings, 'getblocktemplate', [{ rules: ['segwit'], longpollid }], signal);
+      } catch (error) {
+        if (signal.aborted) return;
+        const why = error instanceof Error ? error.message : `Cannot reach ${settings.url}.`;
+        if (this.subscribed) this.lose(why);
+        else this.fail(why);
+        return;
+      }
+
+      if (signal.aborted) return;
+      const template = this.templated(TEMPLATE, message);
+      if (!template) return;
+      longpollid = template.longpollid;
+    }
+  }
+
+  private async call(settings: MinerSettings, method: string, params: unknown[], signal: AbortSignal) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (settings.password) headers.Authorization = `Basic ${base64(`${settings.user ?? ''}:${settings.password}`)}`;
+    let response: Response;
+    try {
+      response = await fetch(httpUrl(settings.url), {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ jsonrpc: '1.0', id: 1, method, params }),
+        signal,
+      });
+    } catch {
+      throw new Error(`Cannot reach ${settings.url}.`);
+    }
+
+    if (response.status === 401 || response.status === 403) throw new Error('Not authorized.');
+    const message: unknown = await response.json();
+    if (!message || typeof message !== 'object') throw new Error('Invalid response.');
+    return message as Record<string, unknown>;
+  }
+
+  // btcd templates are requested over a websocket, authenticated in band, on
+  // each block notification and at an interval.
+  private connectBtcd(settings: MinerSettings) {
+    let socket: WebSocket;
+    try {
+      socket = new WebSocket(settings.url);
+    } catch (error) {
+      this.fail(error instanceof Error ? error.message : 'Invalid service URL.');
+      return;
+    }
+
+    this.socket = socket;
+    socket.onopen = () => {
+      if (settings.password) this.request(socket, AUTHENTICATE, 'authenticate', [settings.user ?? '', settings.password]);
+      else this.notify(socket);
+    };
+    socket.onmessage = (event: MessageEvent) => {
+      if (typeof event.data === 'string') this.receiveBtcd(socket, event.data);
+    };
+    socket.onerror = () => {
+      if (this.socket === socket) this.lose(`Cannot connect to ${settings.url}.`);
+    };
+    socket.onclose = (event) => {
+      if (this.socket !== socket) return;
+      this.lose(event.reason ? `Disconnected: ${event.reason}` : 'Disconnected by the server.');
+    };
+
+    this.renewal = setInterval(() => {
+      this.request(socket, RENEW, 'getblocktemplate', [{ rules: ['segwit'] }]);
+    }, REFRESH * 1000);
+  }
+
+  private notify(socket: WebSocket) {
+    this.request(socket, NOTIFY, 'notifyblocks', []);
+    this.request(socket, TEMPLATE, 'getblocktemplate', [{ rules: ['segwit'] }]);
+  }
+
+  private request(socket: WebSocket | undefined, id: number, method: string, params: unknown[]) {
+    if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ jsonrpc: '1.0', id, method, params }));
+  }
+
+  // Each frame is one json-rpc response or notification.
+  private receiveBtcd(socket: WebSocket, data: string) {
+    let message: unknown;
+    try {
+      message = JSON.parse(data);
+    } catch {
+      return;
+    }
+
+    if (!message || typeof message !== 'object') return;
+    const value = message as Record<string, unknown>;
+    if (value.method === 'blockconnected') {
+      this.request(socket, RENEW, 'getblocktemplate', [{ rules: ['segwit'] }]);
+      return;
+    }
+
+    if (value.id === AUTHENTICATE) {
+      if (value.error) this.fail(`Not authenticated: ${reason(value.error)}`);
+      else this.notify(socket);
+      return;
+    }
+
+    if (value.id === NOTIFY) return;
+    if (value.id === TEMPLATE || value.id === RENEW) {
+      this.templated(value.id, value);
+      return;
+    }
+
+    this.submitted(Number(value.id), value);
+  }
+
+  // The template of a response, else the response is a fault of the service.
+  private templated(id: number, message: Record<string, unknown>): Template | undefined {
+    const template = message.error ? undefined : parseTemplate(message.result);
+    if (!template) {
+      if (id === RENEW) return undefined;
+      const why = `Template refused: ${reason(message.error ?? 'invalid template')}`;
+      if (this.subscribed) this.lose(why);
+      else this.fail(why);
+      return undefined;
+    }
+
+    this.setTemplate(template);
+    return template;
+  }
+
+  // bip22: a submitted block is accepted by a null result, else its reason.
+  private submitted(id: number, message: Record<string, unknown>) {
+    const key = this.pending.get(id)?.key;
+    if (key === undefined) return;
+    this.pending.delete(id);
+    const { result, error } = message;
+    const accepted = !error && result === null;
+    const why = typeof result === 'string' ? result : reason(error);
+    this.update({
+      accepted: this.state.accepted + (accepted ? 1 : 0),
+      rejected: this.state.rejected + (accepted ? 0 : 1),
+      shares: this.state.shares.map((share) =>
+        share.key === key
+          ? { ...share, outcome: accepted ? 'accepted' : 'rejected', reason: accepted ? undefined : why }
+          : share
+      ),
+    });
+  }
+
+  private submitBlock(id: number, hex: string) {
+    const settings = this.state.settings;
+    if (settings?.protocol === 'btcd') {
+      this.request(this.socket, id, 'submitblock', [hex]);
+      return;
+    }
+
+    const signal = this.abort?.signal;
+    if (!settings || !signal) return;
+    void this.call(settings, 'submitblock', [hex], signal)
+      .then((message) => {
+        this.submitted(id, message);
+      })
+      .catch((error: unknown) => {
+        if (!signal.aborted) this.submitted(id, { error: error instanceof Error ? error.message : 'unanswered' });
+      });
+  }
+
+  // A template is mined to its block target, as a job of the coinbase that
+  // pays the payout script. A renewal of the same work within the refresh
+  // interval keeps the current job.
+  private setTemplate(template: Template) {
+    const settings = this.state.settings;
+    const current = this.template;
+    if (
+      current &&
+      current.longpollid === template.longpollid &&
+      current.bits === template.bits &&
+      current.previous === template.previous &&
+      template.time - current.time < REFRESH
+    )
+      return;
+
+    this.template = template;
+    this.solved = false;
+    this.extranonce1 = '';
+    this.extranonce2Size = EXTRANONCE_SIZE;
+    this.subscribed = true;
+    this.attempts = 0;
+    this.setTarget(bitsTarget(template.bits));
+    const id = (++this.templates).toString(16).padStart(8, '0');
+    this.setJob(templateJob(template, id, settings?.payout ?? '', settings?.tag ?? ''), template.height);
+  }
+
   stop() {
     this.wanted = false;
     if (this.retry) clearTimeout(this.retry);
     this.retry = undefined;
-    const socket = this.socket;
-    this.socket = undefined;
-    socket?.close();
+    this.close();
     this.unanswered();
     this.halt();
     if (this.state.status !== 'stopped' && this.state.status !== 'failed') {
       this.update({ status: 'stopped', message: undefined, hashrate: 0 });
     }
+  }
+
+  // Closes the socket or aborts the requests of the connection.
+  private close() {
+    if (this.renewal) clearInterval(this.renewal);
+    this.renewal = undefined;
+    const socket = this.socket;
+    const abort = this.abort;
+    this.socket = undefined;
+    this.abort = undefined;
+    socket?.close();
+    abort?.abort();
   }
 
   // Shares awaiting an answer are given up on.
@@ -320,9 +587,7 @@ class Miner {
       return;
     }
 
-    const socket = this.socket;
-    this.socket = undefined;
-    socket?.close();
+    this.close();
     this.unanswered();
     this.halt(false);
     const seconds = Math.min(RETRY_CAP, RETRY * 2 ** this.attempts);
@@ -355,9 +620,7 @@ class Miner {
     this.wanted = false;
     if (this.retry) clearTimeout(this.retry);
     this.retry = undefined;
-    const socket = this.socket;
-    this.socket = undefined;
-    socket?.close();
+    this.close();
     this.unanswered();
     this.halt();
     this.update({ status: 'failed', message, hashrate: 0 });
@@ -582,14 +845,15 @@ class Miner {
     });
   }
 
-  private setJob(job: Job) {
+  private setJob(job: Job, height = coinbaseHeight(job)) {
     this.job = job;
+    this.height = height;
     this.update({
       status: 'mining',
       jobs: this.state.jobs + 1,
       job: {
         id: job.id,
-        height: coinbaseHeight(job),
+        height,
         tag: coinbaseTag(job),
         previous: previousHash(job),
         networkDifficulty: targetDifficulty(bitsTarget(job.bits)),
@@ -633,15 +897,16 @@ class Miner {
     }
 
     const job = this.job;
-    if (!job) return undefined;
+    if (!job || this.solved) return undefined;
     const extranonce2 = extranonce(this.extranonceCounter++, this.extranonce2Size);
     return {
       header: buildHeader(job, this.extranonce1, extranonce2),
       id: job.id,
       bits: job.bits,
-      height: coinbaseHeight(job),
+      height: this.height,
       job,
       extranonce2,
+      template: this.template,
     };
   }
 
@@ -689,9 +954,23 @@ class Miner {
     // Checked here too, as the target may have changed since.
     if (value > this.target) return;
     const block = value <= bitsTarget(unit.bits);
+
+    // The workers stop on the first block of a template, until the next.
+    if (unit.template) {
+      if (unit.template !== this.template || this.solved) return;
+      this.solved = true;
+      for (const worker of this.workers) this.post(worker, { type: 'stop' });
+      this.units.clear();
+      this.assigned.clear();
+    }
+
     const key = ++this.shareKey;
     const standard = unit.standard;
-    if (standard && this.channel !== undefined) {
+    if (unit.template && unit.job && unit.extranonce2 !== undefined) {
+      const id = ++this.requestId;
+      this.pending.set(id, { key, sent: Date.now() });
+      this.submitBlock(id, blockHex(header, unit.job, unit.extranonce2, unit.template));
+    } else if (standard && this.channel !== undefined) {
       const sequence = ++this.sequence;
       this.pending.set(sequence, { key, sent: Date.now() });
       this.socket?.send(submitSharesStandard(this.channel, sequence, standard.job, nonce, standard.ntime, standard.version));
@@ -724,7 +1003,7 @@ class Miner {
     const time = Date.now();
     for (const entry of this.pending.values()) {
       if (time - entry.sent > ANSWER * 1000) {
-        this.lose(`No answer from the stratum service for ${String(ANSWER)} seconds.`);
+        this.lose(`No answer from the service for ${String(ANSWER)} seconds.`);
         return;
       }
     }
