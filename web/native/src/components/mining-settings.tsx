@@ -4,17 +4,41 @@ import { isAddress } from '@/lib/api/providers/libbitcoin-mapper';
 import type { MinerProtocol, MinerSettings } from '@/lib/mining/miner';
 import { closeOnBackdrop } from '@/lib/utils/dialog';
 
-/** Miner settings of the page, with the payout fields the node may supply. */
+/** The service and credentials of a miner protocol. */
+export interface ServiceSettings {
+  url: string;
+  worker: string;
+  password: string;
+}
+
+/** Miner settings of the page, with the payout fields the node may supply.
+ * The url, worker and password are those of the protocol, which are kept
+ * apart from those of each other protocol. */
 export interface PageSettings extends MinerSettings {
   address: string;
   tag: string;
+  services: Partial<Record<MinerProtocol, ServiceSettings>>;
 }
 
-/** Page settings required as the node does not advertise them. */
+/** The service settings of a protocol never configured. */
+export const DEFAULT_SERVICE: ServiceSettings = { url: '', worker: 'browser', password: '' };
+
+/** The settings with their service settings kept, and those of the protocol. */
+export function withProtocol(settings: PageSettings, protocol: MinerProtocol): PageSettings {
+  const services = {
+    ...settings.services,
+    [settings.protocol ?? 'v1']: { url: settings.url, worker: settings.worker, password: settings.password },
+  };
+  return { ...settings, ...(services[protocol] ?? DEFAULT_SERVICE), services, protocol };
+}
+
+/** Page settings of a protocol required as the node does not advertise them,
+ * and whether its worker is a username. */
 export interface RequiredSettings {
   url: boolean;
   address: boolean;
   tag: boolean;
+  username: boolean;
 }
 
 const PROTOCOLS: Record<MinerProtocol, string> = {
@@ -41,17 +65,13 @@ export function MiningSettings({
   network,
   maximum,
   protocols,
-  password = true,
-  username = false,
   onSave,
   onClose,
 }: {
   open: boolean;
   settings: PageSettings;
-  require: RequiredSettings;
+  require: (protocol: MinerProtocol) => RequiredSettings;
   protocols: MinerProtocol[];
-  password?: boolean;
-  username?: boolean;
   wallet?: NetworkParams;
   network?: string;
   maximum: number;
@@ -74,25 +94,27 @@ export function MiningSettings({
     setDraft((current) => ({ ...current, [key]: value }));
   };
 
+  const required = require(draft.protocol ?? 'v1');
   const wrongAddress =
-    require.address && wallet !== undefined && draft.address.trim() !== '' && !isAddress(draft.address, wallet);
+    required.address && wallet !== undefined && draft.address.trim() !== '' && !isAddress(draft.address, wallet);
 
   const missing =
     wrongAddress ||
-    (require.url && !draft.url.trim()) ||
-    (require.address && !draft.address.trim()) ||
-    (require.tag && !draft.tag.trim()) ||
-    (!require.address && !draft.worker.trim());
+    (required.url && !draft.url.trim()) ||
+    (required.address && !draft.address.trim()) ||
+    (required.tag && !draft.tag.trim()) ||
+    (!required.address && !draft.worker.trim());
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    onSave({
+    const trimmed = {
       ...draft,
       url: draft.url.trim(),
       worker: draft.worker.trim(),
       address: draft.address.trim(),
       tag: draft.tag.trim(),
-    });
+    };
+    onSave(withProtocol(trimmed, trimmed.protocol ?? 'v1'));
   };
 
   return (
@@ -114,7 +136,8 @@ export function MiningSettings({
               className={INPUT}
               value={draft.protocol ?? 'v1'}
               onChange={(event) => {
-                change('protocol', protocols.find((value) => value === event.target.value) ?? 'v1');
+                const protocol = protocols.find((value) => value === event.target.value) ?? 'v1';
+                setDraft((current) => withProtocol(current, protocol));
               }}
             >
               {protocols.map((value) => (
@@ -125,7 +148,7 @@ export function MiningSettings({
             </select>
           </Field>
         )}
-        {require.url && (
+        {required.url && (
           <Field label="Service">
             <input
               className={INPUT}
@@ -138,7 +161,7 @@ export function MiningSettings({
             />
           </Field>
         )}
-        {require.address && (
+        {required.address && (
           <Field label="Payout address">
             <input
               className={INPUT}
@@ -153,7 +176,7 @@ export function MiningSettings({
             )}
           </Field>
         )}
-        {require.tag && (
+        {required.tag && (
           <Field label="Coinbase tag">
             <input
               className={INPUT}
@@ -165,9 +188,9 @@ export function MiningSettings({
             />
           </Field>
         )}
-        <div className={require.address && !username ? '' : 'grid gap-4 sm:grid-cols-[minmax(0,1fr)_7rem]'}>
-          {(!require.address || username) && (
-            <Field label={username ? 'Username' : 'Worker'}>
+        <div className={required.address && !required.username ? '' : 'grid gap-4 sm:grid-cols-[minmax(0,1fr)_7rem]'}>
+          {(!required.address || required.username) && (
+            <Field label={required.username ? 'Username' : 'Worker'}>
               <input
                 className={INPUT}
                 value={draft.worker}
@@ -191,20 +214,18 @@ export function MiningSettings({
             />
           </Field>
         </div>
-        {password && (
-          <Field label="Password">
-            <input
-              className={INPUT}
-              type="password"
-              value={draft.password}
-              autoComplete="off"
-              placeholder="optional"
-              onChange={(event) => {
-                change('password', event.target.value);
-              }}
-            />
-          </Field>
-        )}
+        <Field label="Password">
+          <input
+            className={INPUT}
+            type="password"
+            value={draft.password}
+            autoComplete="off"
+            placeholder="optional"
+            onChange={(event) => {
+              change('password', event.target.value);
+            }}
+          />
+        </Field>
         <div className="flex justify-end gap-3 pt-2">
           <button
             type="button"

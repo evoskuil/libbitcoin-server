@@ -1,7 +1,13 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { HashrateChart } from '@/components/hashrate-chart';
-import { MiningSettings, protocolName, type PageSettings } from '@/components/mining-settings';
+import {
+  DEFAULT_SERVICE,
+  MiningSettings,
+  protocolName,
+  type PageSettings,
+  type ServiceSettings,
+} from '@/components/mining-settings';
 import { AddressQRCode } from '@/components/qr-code';
 import { addressToScript } from '@/lib/api/providers/libbitcoin-mapper';
 import { useBlockHeader, useServerConfiguration } from '@/lib/hooks/useBlockchainData';
@@ -48,27 +54,44 @@ function maximumThreads(): number {
 
 function defaults(): PageSettings {
   return {
-    url: '',
-    worker: 'browser',
-    password: '',
+    ...DEFAULT_SERVICE,
     threads: Math.max(1, cores() - 1),
     address: '',
     tag: '',
     protocol: 'v1',
+    services: {},
   };
 }
 
+function loadService(value: unknown): ServiceSettings | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const saved = value as Partial<ServiceSettings>;
+  return {
+    url: typeof saved.url === 'string' ? saved.url : DEFAULT_SERVICE.url,
+    worker: typeof saved.worker === 'string' && saved.worker ? saved.worker : DEFAULT_SERVICE.worker,
+    password: typeof saved.password === 'string' ? saved.password : DEFAULT_SERVICE.password,
+  };
+}
+
+// The service settings of each protocol are saved apart. Settings saved before
+// that are taken as those of their protocol.
 function load(): PageSettings {
   const base = defaults();
   try {
     const saved = JSON.parse(globalThis.localStorage.getItem(STORAGE_KEY) ?? '{}') as Partial<PageSettings>;
+    const protocol = PROTOCOLS.find((value) => value === saved.protocol) ?? 'v1';
+    const services: PageSettings['services'] = {};
+    for (const value of PROTOCOLS) {
+      const service = loadService(saved.services?.[value]);
+      if (service) services[value] = service;
+    }
+
     return {
-      url: typeof saved.url === 'string' ? saved.url : base.url,
-      worker: typeof saved.worker === 'string' && saved.worker ? saved.worker : base.worker,
-      password: typeof saved.password === 'string' ? saved.password : base.password,
+      ...(services[protocol] ?? loadService(saved) ?? DEFAULT_SERVICE),
       address: typeof saved.address === 'string' ? saved.address : base.address,
       tag: typeof saved.tag === 'string' ? saved.tag : base.tag,
-      protocol: PROTOCOLS.find((value) => value === saved.protocol) ?? 'v1',
+      protocol,
+      services,
       threads:
         typeof saved.threads === 'number' && saved.threads >= 1
           ? Math.min(saved.threads, maximumThreads())
@@ -191,9 +214,16 @@ export function WebMinerPage() {
       <MiningSettings
         open={editing}
         settings={settings}
-        require={{ url: !advertised, address: !payout, tag: !coinbaseTag }}
+        require={(value) => {
+          const each = services[value];
+          return {
+            url: !serviceSocketUrl(each),
+            address: isTemplate(value) || !each?.payout_address,
+            tag: isTemplate(value) || !each?.coinbase_tag,
+            username: isTemplate(value),
+          };
+        }}
         protocols={protocols}
-        username={template}
         wallet={wallet}
         network={configuration?.network}
         maximum={maximumThreads()}
