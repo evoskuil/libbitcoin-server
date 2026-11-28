@@ -565,6 +565,9 @@
     <None Include="..\..\..\..\web\native\src\lib\mining\sv2.ts">
       <Filter>web\native\src\lib\mining</Filter>
     </None>
+    <None Include="..\..\..\..\web\native\src\lib\mining\template.ts">
+      <Filter>web\native\src\lib\mining</Filter>
+    </None>
     <None Include="..\..\..\..\web\native\src\lib\theme.ts">
       <Filter>web\native\src\lib</Filter>
     </None>
@@ -704,6 +707,9 @@
       <Filter>web\native\test\lib\mining</Filter>
     </None>
     <None Include="..\..\..\..\web\native\test\lib\mining\sv2.test.ts">
+      <Filter>web\native\test\lib\mining</Filter>
+    </None>
+    <None Include="..\..\..\..\web\native\test\lib\mining\template.test.ts">
       <Filter>web\native\test\lib\mining</Filter>
     </None>
     <None Include="..\..\..\..\web\native\test\lib\utils\address.test.ts">
