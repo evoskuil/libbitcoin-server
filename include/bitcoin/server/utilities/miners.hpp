@@ -24,7 +24,7 @@
 namespace libbitcoin {
 namespace server {
 
-/// The mining channels of the node's stratum services, their shares, hash
+/// The mining channels of the node's mining services, their shares, hash
 /// rates and the blocks they find, for administration. Thread safe.
 class BCS_API miners
 {

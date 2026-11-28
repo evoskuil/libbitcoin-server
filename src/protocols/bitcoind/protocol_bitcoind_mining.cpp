@@ -115,6 +115,20 @@ void protocol_bitcoind_mining::start() NOEXCEPT
     submit_t::start();
 }
 
+void protocol_bitcoind_mining::stopping(const code& ec) NOEXCEPT
+{
+    BC_ASSERT(stranded());
+    if (!miner_.empty())
+        mining()->remove(miner_);
+
+    submit_t::stopping(ec);
+}
+
+std::string protocol_bitcoind_mining::service() const NOEXCEPT
+{
+    return "bitcoind";
+}
+
 // Mining methods.
 // ----------------------------------------------------------------------------
 
@@ -303,6 +317,7 @@ void protocol_bitcoind_mining::handle_submit_block(const code& ec,
         return;
     }
 
+    set_client();
     const auto header = emplace_shared<const chain::header>(data);
     const auto block = emplace_shared<const chain::view::block>(
         std::move(data), true);
@@ -317,54 +332,64 @@ void protocol_bitcoind_mining::handle_submit_block(const code& ec,
 }
 
 // bip22: null when accepted, otherwise duplicate, inconclusive or reject token.
-void protocol_bitcoind_mining::handle_submitted(const hash_digest&,
+void protocol_bitcoind_mining::handle_submitted(const hash_digest& hash,
     submission outcome, const code& ec) NOEXCEPT
 {
     BC_ASSERT(stranded());
 
+    std::string result{};
     switch (outcome)
     {
         case submission::accepted:
         {
-            send_result(null_t{});
+            result = "submitted";
             break;
         }
         case submission::duplicate:
         {
-            send_result(string_t{ "duplicate" });
+            result = "duplicate";
             break;
         }
         case submission::duplicate_inconclusive:
         {
-            send_result(string_t{ "duplicate-inconclusive" });
+            result = "duplicate-inconclusive";
             break;
         }
         case submission::duplicate_invalid:
         {
-            send_result(string_t{ "duplicate-invalid" });
+            result = "duplicate-invalid";
             break;
         }
         case submission::inconclusive:
         {
-            send_result(string_t{ "inconclusive" });
+            result = "inconclusive";
             break;
         }
         case submission::bad_parent:
         {
-            send_result(string_t{ "bad-prevblk" });
+            result = "bad-prevblk";
             break;
         }
         case submission::rejected:
         {
-            send_result(string_t{ error::bitcoind::reject(ec) });
+            result = error::bitcoind::reject(ec);
             break;
         }
         case submission::failed:
         {
-            send_error(error::bitcoind::internal_error);
+            result = "failed";
             break;
         }
     }
+
+    record_submitted(hash, outcome, result);
+
+    if (outcome == submission::failed)
+        send_error(error::bitcoind::internal_error);
+    else if (outcome == submission::accepted)
+        send_result(null_t{});
+    else
+        send_result(string_t{ result });
 }
 
 // The response defers to organize completion (see dispatch).
@@ -445,6 +470,7 @@ void protocol_bitcoind_mining::handle_get_block_template(const code& ec,
         return;
     }
 
+    set_client();
     uint64_t sequence{};
     const auto longpollid = template_request.find("longpollid");
     if (longpollid != template_request.end() &&
@@ -612,6 +638,10 @@ void protocol_bitcoind_mining::do_template(const code& ec,
             encode_base16(splice(prefix, held->commitment)));
     }
 
+    height_ = height;
+    difficulty_ = header{ 0, {}, {}, 0, bits, 0 }.difficulty();
+    register_miner();
+
     finish_template(result);
     send_result(std::move(result));
 }
@@ -760,6 +790,60 @@ bool protocol_bitcoind_mining::longpoll_done(
     const longpoll& poll) const NOEXCEPT
 {
     return template_generation() > poll.sequence;
+}
+
+// Miners registry.
+// ----------------------------------------------------------------------------
+// A connection that requests a template or submits a block is a channel of
+// the registry, until it stops.
+
+// The user agent of the first http request (websocket frames carry none).
+void protocol_bitcoind_mining::set_client() NOEXCEPT
+{
+    BC_ASSERT(stranded());
+    const auto& request = get_request();
+    if (client_.empty() && request)
+        client_ = (*request)[network::http::field::user_agent];
+}
+
+void protocol_bitcoind_mining::register_miner() NOEXCEPT
+{
+    BC_ASSERT(stranded());
+    if (!miner_.empty())
+    {
+        mining()->set_difficulty(miner_, difficulty_);
+        return;
+    }
+
+    miner_ = miners::to_id(identifier(), {});
+    mining()->add(
+    {
+        .id = miner_,
+        .service = service(),
+        .transport = websocket() ? miners::to_transport(false, true,
+            secure()) : (secure() ? "https" : "http"),
+        .address = opposite().to_string(),
+        .client = client_,
+        .connected = miners::now(),
+        .difficulty = difficulty_
+    });
+}
+
+// A submitted block is a share of the network difficulty.
+void protocol_bitcoind_mining::record_submitted(const hash_digest& hash,
+    submission outcome, const std::string& result) NOEXCEPT
+{
+    BC_ASSERT(stranded());
+    register_miner();
+
+    const auto accepted = outcome == submission::accepted;
+    mining()->add_share(miner_,
+    {
+        miners::now(), height_, difficulty_, result
+    }, accepted);
+
+    if (accepted || outcome == submission::duplicate)
+        mining()->add_block({ hash, height_, miners::now(), miner_ });
 }
 
 BC_POP_WARNING()

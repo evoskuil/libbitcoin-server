@@ -12,7 +12,7 @@ import {
   formatShortRelativeTime,
 } from '@/lib/mining/format';
 
-// The node's mining console: the channels of its stratum services, by
+// The node's mining console: the channels of its mining services, by
 // service, the detail of the one chosen, and the blocks they found.
 export function Mining({ metrics }: { metrics: WorkerMetricsStore }) {
   const mining = useSyncExternalStore(metrics.subscribeMining, metrics.getMining, metrics.getMining);
@@ -28,7 +28,7 @@ export function Mining({ metrics }: { metrics: WorkerMetricsStore }) {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-accent text-2xl font-semibold">Mining</h1>
-          <p className="text-textMuted text-sm">The channels of the node&apos;s stratum services.</p>
+          <p className="text-textMuted text-sm">The channels of the node&apos;s mining services.</p>
         </div>
         <p className="text-textMuted text-sm">
           Fleet <strong className="text-textPrimary text-lg tabular-nums">{formatHashrate(fleet)}</strong> ·{' '}

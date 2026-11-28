@@ -54,8 +54,12 @@ public:
     }
 
     void start() NOEXCEPT override;
+    void stopping(const code& ec) NOEXCEPT override;
 
 protected:
+    /// The miners registry service name of the channel.
+    virtual std::string service() const NOEXCEPT;
+
     /// Answer the submitted block (bip22).
     void handle_submitted(const system::hash_digest& hash,
         submission outcome, const code& ec) NOEXCEPT override;
@@ -133,6 +137,18 @@ private:
     void do_longpoll_complete(const code& ec,
         const longpoll::ptr& poll) NOEXCEPT;
     bool longpoll_done(const longpoll& poll) const NOEXCEPT;
+
+    // Miners registry.
+    void set_client() NOEXCEPT;
+    void register_miner() NOEXCEPT;
+    void record_submitted(const system::hash_digest& hash,
+        submission outcome, const std::string& result) NOEXCEPT;
+
+    // These are protected by strand.
+    std::string miner_{};
+    std::string client_{};
+    size_t height_{};
+    double difficulty_{};
 };
 
 } // namespace server

@@ -131,6 +131,18 @@ protected:
         return channel_->version();
     }
 
+    /// The channel has been upgraded to websocket.
+    inline bool websocket() const NOEXCEPT
+    {
+        return channel_->websocket();
+    }
+
+    /// The channel is secured by tls.
+    inline bool secure() const NOEXCEPT
+    {
+        return channel_->secure();
+    }
+
     /// The interface version of the channel is at least the specified version.
     inline bool at_least(server::bitcoind::version version) const NOEXCEPT
     {

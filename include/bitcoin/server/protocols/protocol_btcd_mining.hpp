@@ -45,6 +45,7 @@ public:
     }
 
 protected:
+    std::string service() const NOEXCEPT override;
     void finish_template(network::rpc::object_t& out) const NOEXCEPT override;
     void do_mining_info(const code& ec, const database::tx_links& links,
         const gate_t::ptr& gate) NOEXCEPT override;

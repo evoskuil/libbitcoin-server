@@ -29,6 +29,11 @@ using namespace network::rpc;
 
 BC_PUSH_WARNING(NO_THROW_IN_NOEXCEPT)
 
+std::string protocol_btcd_mining::service() const NOEXCEPT
+{
+    return "btcd";
+}
+
 // btcd templates carry coinbase flags and latest block time, no bip9 rules.
 void protocol_btcd_mining::finish_template(object_t& out) const NOEXCEPT
 {

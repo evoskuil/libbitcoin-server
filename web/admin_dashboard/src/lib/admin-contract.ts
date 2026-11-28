@@ -405,7 +405,7 @@ const miningBlockSchema = z.object({
   channel: z.string(),
 });
 
-// The mining channels of the stratum services and the blocks they found.
+// The mining channels of the mining services and the blocks they found.
 const adminMiningFrameSchema = z.object({
   channels: z.array(miningChannelSchema),
   blocks: z.array(miningBlockSchema),
