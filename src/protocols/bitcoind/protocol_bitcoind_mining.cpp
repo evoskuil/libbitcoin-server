@@ -678,18 +678,19 @@ void protocol_bitcoind_mining::arm_longpoll(uint64_t sequence,
 }
 
 // Invoked on the node strand.
-bool protocol_bitcoind_mining::handle_longpoll_event(const code& ec,
+// The event code is not a call status.
+bool protocol_bitcoind_mining::handle_longpoll_event(const code&,
     node::event_value value, const longpoll::ptr& poll,
     const longpoll_race::ptr& race) NOEXCEPT
 {
-    if (ec)
+    const auto chase = node::to_chase(value);
+    if (chase == node::chase::stop)
     {
-        race->finish(ec);
+        race->finish(network::error::service_stopped);
         return false;
     }
 
-    if (node::to_chase(value) == node::chase::template_ &&
-        longpoll_done(*poll))
+    if (chase == node::chase::template_ && longpoll_done(*poll))
     {
         race->finish(error::success);
         return false;
