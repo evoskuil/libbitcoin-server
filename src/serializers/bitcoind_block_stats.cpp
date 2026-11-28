@@ -123,7 +123,11 @@ object_t block_stats(const chain::block& block, size_t height,
 
         uint64_t tx_total_input{};
         for (const auto& in: *tx->inputs_ptr())
-            tx_total_input = ceilinged_add(tx_total_input, in->prevout->value());
+        {
+            if (in->prevout)
+                tx_total_input = ceilinged_add(tx_total_input,
+                    in->prevout->value());
+        }
 
         const auto fee = floored_subtract(tx_total_input, tx_total_output);
         fees.push_back(fee);

@@ -244,6 +244,12 @@ void inject_activity(network::rpc::array_t& out, const chain::transaction& tx,
     uint32_t spend{};
     for (const auto& in: *tx.inputs_ptr())
     {
+        if (!in->prevout)
+        {
+            ++spend;
+            continue;
+        }
+
         const auto& prevout = *in->prevout;
         const auto script = encode_base16(prevout.script().to_data(false));
         if (watch.contains(script))
