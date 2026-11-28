@@ -44,8 +44,8 @@ export interface RequiredSettings {
 const PROTOCOLS: Record<MinerProtocol, string> = {
   v1: 'Stratum v1',
   v2: 'Stratum v2',
-  bitcoind: 'bitcoind',
-  btcd: 'btcd',
+  bitcoind: 'GBT (bitcoind)',
+  btcd: 'GBT (btcd)',
 };
 
 /** The name of a miner protocol. */
