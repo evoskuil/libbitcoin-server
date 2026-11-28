@@ -272,6 +272,11 @@ protected:
     void do_list_unspent(const hash_digest& hash, bool wrap,
         const gate_t::ptr& gate) NOEXCEPT;
 
+    void complete_get_receipts(const code& ec, uint64_t confirmed,
+        const database::pool_receipts& receipts,
+        const gate_t::ptr& gate) NOEXCEPT;
+    void handle_get_range(const code& ec, uint64_t worst, uint64_t best,
+        uint64_t confirmed, const gate_t::ptr& gate) NOEXCEPT;
     void complete_get_balance(const code& ec, uint64_t confirmed,
         int64_t unconfirmed, const gate_t::ptr& gate) NOEXCEPT;
     void complete_get_history(const code& ec, const histories& histories,

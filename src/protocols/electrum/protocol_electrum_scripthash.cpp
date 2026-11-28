@@ -79,10 +79,37 @@ void protocol_electrum::do_get_balance(const hash_digest& hash,
 {
     BC_ASSERT(!stranded());
     const auto& query = archive();
-    uint64_t confirmed{}, unconfirmed{};
-    auto ec = query.get_balance(stopping_, confirmed, unconfirmed, hash,
-        options().maximum_history);
-    POST(complete_get_balance, ec, confirmed, unconfirmed, gate);
+    const auto limit = options().maximum_history;
+    uint64_t confirmed{};
+    database::pool_receipts receipts{};
+    auto ec = query.get_confirmed_balance(stopping_, confirmed, hash, limit);
+    if (!ec)
+        ec = query.get_unconfirmed_receipts(stopping_, receipts, hash, limit);
+
+    POST(complete_get_receipts, ec, confirmed, std::move(receipts), gate);
+}
+
+// Unconfirmed is the least value over outcomes of conflicting receipts.
+void protocol_electrum::complete_get_receipts(const code& ec,
+    uint64_t confirmed, const database::pool_receipts& receipts,
+    const gate_t::ptr& gate) NOEXCEPT
+{
+    BC_ASSERT(stranded());
+
+    if (ec || receipts.empty())
+    {
+        complete_get_balance(ec, confirmed, {}, gate);
+        return;
+    }
+
+    get_unconfirmed_range(receipts,
+        BIND(handle_get_range, _1, _2, _3, confirmed, gate));
+}
+
+void protocol_electrum::handle_get_range(const code& ec, uint64_t worst,
+    uint64_t, uint64_t confirmed, const gate_t::ptr& gate) NOEXCEPT
+{
+    POST(complete_get_balance, ec, confirmed, worst, gate);
 }
 
 void protocol_electrum::complete_get_balance(const code& ec,
