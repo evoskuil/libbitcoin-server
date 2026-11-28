@@ -146,9 +146,16 @@ export function WebMinerPage() {
   }, [settings]);
 
   // The node's advertised service and payout take precedence over the page.
+  // A stratum identity is the username where the node pays its own address,
+  // else the payout address, with any username after a dot.
+  const identity = (page: PageSettings) => {
+    if (payout) return page.worker;
+    return page.worker ? `${page.address}.${page.worker}` : page.address;
+  };
+
   const effective = (page: PageSettings): MinerSettings => ({
     url: advertised ?? page.url,
-    worker: payout ? page.worker : page.address,
+    worker: identity(page),
     password: page.password,
     threads: page.threads,
     protocol,
@@ -216,11 +223,11 @@ export function WebMinerPage() {
         settings={settings}
         require={(value) => {
           const each = services[value];
+          const template = isTemplate(value);
           return {
             url: !serviceSocketUrl(each),
-            address: isTemplate(value) || !each?.payout_address,
-            tag: isTemplate(value) || !each?.coinbase_tag,
-            username: isTemplate(value),
+            payout: template ? undefined : each?.payout_address ?? undefined,
+            tag: template ? undefined : each?.coinbase_tag ?? undefined,
           };
         }}
         protocols={protocols}

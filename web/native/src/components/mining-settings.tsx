@@ -32,13 +32,12 @@ export function withProtocol(settings: PageSettings, protocol: MinerProtocol): P
   return { ...settings, ...(services[protocol] ?? DEFAULT_SERVICE), services, protocol };
 }
 
-/** Page settings of a protocol required as the node does not advertise them,
- * and whether its worker is a username. */
-export interface RequiredSettings {
+/** The fields of a protocol: whether its service url is entered, and the
+ * payout address and coinbase tag the node advertises (not entered). */
+export interface ProtocolFields {
   url: boolean;
-  address: boolean;
-  tag: boolean;
-  username: boolean;
+  payout?: string;
+  tag?: string;
 }
 
 const PROTOCOLS: Record<MinerProtocol, string> = {
@@ -70,7 +69,7 @@ export function MiningSettings({
 }: {
   open: boolean;
   settings: PageSettings;
-  require: (protocol: MinerProtocol) => RequiredSettings;
+  require: (protocol: MinerProtocol) => ProtocolFields;
   protocols: MinerProtocol[];
   wallet?: NetworkParams;
   network?: string;
@@ -94,16 +93,18 @@ export function MiningSettings({
     setDraft((current) => ({ ...current, [key]: value }));
   };
 
-  const required = require(draft.protocol ?? 'v1');
+  // The username is the whole identity where the node pays its own address.
+  const fields = require(draft.protocol ?? 'v1');
+  const username = fields.payout !== undefined;
   const wrongAddress =
-    required.address && wallet !== undefined && draft.address.trim() !== '' && !isAddress(draft.address, wallet);
+    !fields.payout && wallet !== undefined && draft.address.trim() !== '' && !isAddress(draft.address, wallet);
 
   const missing =
     wrongAddress ||
-    (required.url && !draft.url.trim()) ||
-    (required.address && !draft.address.trim()) ||
-    (required.tag && !draft.tag.trim()) ||
-    (!required.address && !draft.worker.trim());
+    (fields.url && !draft.url.trim()) ||
+    (!fields.payout && !draft.address.trim()) ||
+    (!fields.tag && !draft.tag.trim()) ||
+    (username && !draft.worker.trim());
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -148,7 +149,7 @@ export function MiningSettings({
             </select>
           </Field>
         )}
-        {required.url && (
+        {fields.url && (
           <Field label="Service">
             <input
               className={INPUT}
@@ -161,46 +162,41 @@ export function MiningSettings({
             />
           </Field>
         )}
-        {required.address && (
-          <Field label="Payout address">
+        <Field label="Payout address">
+          <input
+            className={`${INPUT} disabled:opacity-60`}
+            value={fields.payout ?? draft.address}
+            disabled={fields.payout !== undefined}
+            spellCheck={false}
+            onChange={(event) => {
+              change('address', event.target.value);
+            }}
+          />
+          {wrongAddress && <span className="block text-xs text-rose-300">Not a {network ?? 'node'} address.</span>}
+        </Field>
+        <Field label="Coinbase tag">
+          <input
+            className={`${INPUT} disabled:opacity-60`}
+            value={fields.tag ?? draft.tag}
+            disabled={fields.tag !== undefined}
+            spellCheck={false}
+            onChange={(event) => {
+              change('tag', event.target.value);
+            }}
+          />
+        </Field>
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_7rem]">
+          <Field label="Username">
             <input
               className={INPUT}
-              value={draft.address}
+              value={draft.worker}
               spellCheck={false}
+              placeholder={username ? undefined : 'optional'}
               onChange={(event) => {
-                change('address', event.target.value);
-              }}
-            />
-            {wrongAddress && (
-              <span className="block text-xs text-rose-300">Not a {network ?? 'node'} address.</span>
-            )}
-          </Field>
-        )}
-        {required.tag && (
-          <Field label="Coinbase tag">
-            <input
-              className={INPUT}
-              value={draft.tag}
-              spellCheck={false}
-              onChange={(event) => {
-                change('tag', event.target.value);
+                change('worker', event.target.value);
               }}
             />
           </Field>
-        )}
-        <div className={required.address && !required.username ? '' : 'grid gap-4 sm:grid-cols-[minmax(0,1fr)_7rem]'}>
-          {(!required.address || required.username) && (
-            <Field label={required.username ? 'Username' : 'Worker'}>
-              <input
-                className={INPUT}
-                value={draft.worker}
-                spellCheck={false}
-                onChange={(event) => {
-                  change('worker', event.target.value);
-                }}
-              />
-            </Field>
-          )}
           <Field label="Threads">
             <input
               className={INPUT}
