@@ -317,7 +317,6 @@ void protocol_bitcoind_mining::handle_submit_block(const code& ec,
         return;
     }
 
-    set_client();
     const auto header = emplace_shared<const chain::header>(data);
     const auto block = emplace_shared<const chain::view::block>(
         std::move(data), true);
@@ -470,7 +469,6 @@ void protocol_bitcoind_mining::handle_get_block_template(const code& ec,
         return;
     }
 
-    set_client();
     uint64_t sequence{};
     const auto longpollid = template_request.find("longpollid");
     if (longpollid != template_request.end() &&
@@ -797,15 +795,6 @@ bool protocol_bitcoind_mining::longpoll_done(
 // A connection that requests a template or submits a block is a channel of
 // the registry, until it stops.
 
-// The user agent of the first http request (websocket frames carry none).
-void protocol_bitcoind_mining::set_client() NOEXCEPT
-{
-    BC_ASSERT(stranded());
-    const auto& request = get_request();
-    if (client_.empty() && request)
-        client_ = (*request)[network::http::field::user_agent];
-}
-
 void protocol_bitcoind_mining::register_miner() NOEXCEPT
 {
     BC_ASSERT(stranded());
@@ -823,7 +812,9 @@ void protocol_bitcoind_mining::register_miner() NOEXCEPT
         .transport = websocket() ? miners::to_transport(false, true,
             secure()) : (secure() ? "https" : "http"),
         .address = opposite().to_string(),
-        .client = client_,
+        .client = client(),
+        .workers = username().empty() ? string_list{} :
+            string_list{ username() },
         .connected = miners::now(),
         .difficulty = difficulty_
     });

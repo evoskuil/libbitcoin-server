@@ -273,6 +273,7 @@ void protocol_btcd::handle_authenticate(const code& ec,
 
     if (authorized())
     {
+        set_username(username);
         send_result({});
         return;
     }

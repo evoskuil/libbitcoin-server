@@ -96,9 +96,9 @@ function channelDot(channel: MiningChannel, mining: AdminMiningFrame | null): st
   return result === 'invalid' ? 'bg-rose-300' : 'bg-amber-300';
 }
 
-// The workers of a channel, or its identifier without any.
+// The workers of a channel, or its address without any.
 function channelName(channel: MiningChannel): string {
-  return channel.workers.length > 0 ? channel.workers.join(', ') : channel.id;
+  return channel.workers.length > 0 ? channel.workers.join(', ') : channel.address;
 }
 
 function ChannelButton({

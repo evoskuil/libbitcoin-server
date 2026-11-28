@@ -143,6 +143,25 @@ protected:
         return channel_->secure();
     }
 
+    /// The user agent of the channel's first http request (requires strand).
+    inline const std::string& client() const NOEXCEPT
+    {
+        return channel_->client();
+    }
+
+    /// The credential username that authorized the channel (requires strand).
+    inline const std::string& username() const NOEXCEPT
+    {
+        return channel_->username();
+    }
+
+    /// Set the credential username that authorized the channel (requires
+    /// strand).
+    inline void set_username(const std::string& username) NOEXCEPT
+    {
+        channel_->set_username(username);
+    }
+
     /// The interface version of the channel is at least the specified version.
     inline bool at_least(server::bitcoind::version version) const NOEXCEPT
     {

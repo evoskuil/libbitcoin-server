@@ -64,6 +64,29 @@ public:
         version_ = version;
     }
 
+    /// The user agent of the first http request, which for a websocket is its
+    /// upgrade (requires strand).
+    inline const std::string& client() const NOEXCEPT
+    {
+        BC_ASSERT(stranded());
+        return client_;
+    }
+
+    /// The credential username that authorized the channel (requires strand).
+    inline const std::string& username() const NOEXCEPT
+    {
+        BC_ASSERT(stranded());
+        return username_;
+    }
+
+    /// Set the credential username that authorized the channel (requires
+    /// strand).
+    inline void set_username(const std::string& username) NOEXCEPT
+    {
+        BC_ASSERT(stranded());
+        username_ = username;
+    }
+
     /// Retain request in dispatch as non-handshake opener, dispatched again
     /// (under its own gate) when channel resumes reader.
     inline void set_opener() NOEXCEPT
@@ -125,6 +148,29 @@ protected:
         return true;
     }
 
+    /// Overridden to capture the client and basic authorization username of
+    /// each http request, including a websocket upgrade.
+    inline void set_authorized(
+        const network::http::request& request) NOEXCEPT override
+    {
+        BC_ASSERT(stranded());
+        using namespace network::http;
+        channel_rpc::set_authorized(request);
+        if (client_.empty())
+            client_ = request[field::user_agent];
+
+        constexpr std::string_view basic{ "Basic " };
+        const std::string authorization{ request[field::authorization] };
+        system::data_chunk decoded{};
+        if (username_.empty() && authorized() &&
+            authorization.starts_with(basic) &&
+            system::decode_base64(decoded, authorization.substr(basic.size())))
+        {
+            const auto text = system::to_string(decoded);
+            username_ = text.substr(zero, text.find(':'));
+        }
+    }
+
     /// Overridden to retain the request in dispatch (see set_opener).
     inline void dispatch(
         const network::http::request_ptr& request) NOEXCEPT override
@@ -141,6 +187,8 @@ private:
 
     // These are protected by strand.
     server::bitcoind::version version_{};
+    std::string client_{};
+    std::string username_{};
     network::http::request_ptr current_{};
     network::http::request_ptr opener_{};
 };

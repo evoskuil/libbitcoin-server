@@ -139,14 +139,12 @@ private:
     bool longpoll_done(const longpoll& poll) const NOEXCEPT;
 
     // Miners registry.
-    void set_client() NOEXCEPT;
     void register_miner() NOEXCEPT;
     void record_submitted(const system::hash_digest& hash,
         submission outcome, const std::string& result) NOEXCEPT;
 
     // These are protected by strand.
     std::string miner_{};
-    std::string client_{};
     size_t height_{};
     double difficulty_{};
 };
