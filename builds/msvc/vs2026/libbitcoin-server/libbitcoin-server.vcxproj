@@ -209,6 +209,7 @@
     <ClCompile Include="..\..\..\..\src\utilities\mining_channel.cpp" />
     <ClCompile Include="..\..\..\..\src\utilities\stratum_v1.cpp" />
     <ClCompile Include="..\..\..\..\src\utilities\stratum_v2.cpp" />
+    <ClCompile Include="..\..\..\..\src\utilities\template.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\bitcoin\server.hpp" />
@@ -333,6 +334,7 @@
     <ClInclude Include="..\..\..\..\include\bitcoin\server\utilities\mining_channel.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\server\utilities\stratum_v1.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\server\utilities\stratum_v2.hpp" />
+    <ClInclude Include="..\..\..\..\include\bitcoin\server\utilities\template.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\server\utilities\utilities.hpp" />
   </ItemGroup>
   <ItemGroup>

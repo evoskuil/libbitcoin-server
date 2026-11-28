@@ -137,6 +137,7 @@
 #include <bitcoin/server/utilities/mining_channel.hpp>
 #include <bitcoin/server/utilities/stratum_v1.hpp>
 #include <bitcoin/server/utilities/stratum_v2.hpp>
+#include <bitcoin/server/utilities/template.hpp>
 #include <bitcoin/server/utilities/utilities.hpp>
 
 #endif

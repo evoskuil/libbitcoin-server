@@ -63,6 +63,8 @@ protected:
       : base(session, channel, options),
         options_(options),
         decay_timer_(system::emplace_shared<network::deadline>(session->log,
+            channel->strand())),
+        easy_timer_(system::emplace_shared<network::deadline>(session->log,
             channel->strand()))
     {
     }
@@ -144,6 +146,9 @@ private:
     void retarget(mining_channel& channel) NOEXCEPT;
     void start_decay() NOEXCEPT;
     void handle_decay(const code& ec) NOEXCEPT;
+    void start_easy(const system::chain::context& ctx,
+        uint32_t timestamp) NOEXCEPT;
+    void handle_easy(const code& ec) NOEXCEPT;
     void submit_mined(const mining_channel& channel,
         const system::chain::header& header, const job& job,
         const system::data_chunk& extranonce) NOEXCEPT;
@@ -157,6 +162,7 @@ private:
     // These are thread safe.
     const settings::mining_server& options_;
     const network::deadline::ptr decay_timer_;
+    const network::deadline::ptr easy_timer_;
     std::atomic_bool active_{};
 
     // These are protected by strand.

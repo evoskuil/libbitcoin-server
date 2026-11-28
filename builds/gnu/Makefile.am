@@ -149,7 +149,8 @@ src_libbitcoin_server_la_SOURCES = \
     ${srcdir}/../../src/utilities/miners.cpp \
     ${srcdir}/../../src/utilities/mining_channel.cpp \
     ${srcdir}/../../src/utilities/stratum_v1.cpp \
-    ${srcdir}/../../src/utilities/stratum_v2.cpp
+    ${srcdir}/../../src/utilities/stratum_v2.cpp \
+    ${srcdir}/../../src/utilities/template.cpp
 
 nodist_src_libbitcoin_server_la_SOURCES = \
     src/version.cpp
@@ -349,6 +350,7 @@ include_bitcoin_server_utilities_HEADERS = \
     ${srcdir}/../../include/bitcoin/server/utilities/mining_channel.hpp \
     ${srcdir}/../../include/bitcoin/server/utilities/stratum_v1.hpp \
     ${srcdir}/../../include/bitcoin/server/utilities/stratum_v2.hpp \
+    ${srcdir}/../../include/bitcoin/server/utilities/template.hpp \
     ${srcdir}/../../include/bitcoin/server/utilities/utilities.hpp
 
 # Tests.
@@ -440,7 +442,8 @@ test_libbitcoin_server_test_SOURCES = \
     ${srcdir}/../../test/utilities/miners.cpp \
     ${srcdir}/../../test/utilities/mining_channel.cpp \
     ${srcdir}/../../test/utilities/stratum_v1.cpp \
-    ${srcdir}/../../test/utilities/stratum_v2.cpp
+    ${srcdir}/../../test/utilities/stratum_v2.cpp \
+    ${srcdir}/../../test/utilities/template.cpp
 
 TESTS = test_runner.sh
 

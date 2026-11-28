@@ -46,6 +46,7 @@ void CLASS::stopping(const code& ec) NOEXCEPT
 
     channels_.clear();
     decay_timer_->stop();
+    easy_timer_->stop();
     base::stopping(ec);
 }
 
@@ -162,11 +163,11 @@ void CLASS::do_template(const code& ec,
     }
 
     const auto& ctx = held->context;
-    const auto height = ctx.height;
-    const auto minimum = add1(ctx.median_time_past);
-    const auto timestamp = std::max(network::unix_time(), minimum);
-
     const auto& bitcoin = this->system_settings();
+    const auto height = ctx.height;
+    const auto minimum = minimum_timestamp(ctx, bitcoin);
+    const auto timestamp = std::max(network::unix_time(), minimum);
+    const auto bits = work_required(ctx, timestamp, bitcoin);
     const auto subsidy = block::subsidy(height,
         bitcoin.subsidy_interval_blocks,
         bitcoin.initial_subsidy(),
@@ -197,14 +198,17 @@ void CLASS::do_template(const code& ec,
             suffix,
             held->previous,
             chain_state::signal_version(bitcoin),
-            ctx.work_required,
+            bits,
             timestamp,
             channel.difficulty()
         }), clean);
     }
+
+    start_easy(ctx, timestamp);
 }
 
-// The current job is issued again at the channel difficulty and a later time.
+// The current job is issued again at the channel difficulty and a later time,
+// clean if the work required of that time differs.
 TEMPLATE
 void CLASS::refresh(mining_channel& channel) NOEXCEPT
 {
@@ -217,7 +221,47 @@ void CLASS::refresh(mining_channel& channel) NOEXCEPT
     auto copy = *current;
     copy.difficulty = channel.difficulty();
     copy.timestamp = std::max(network::unix_time(), add1(current->timestamp));
-    send_job(channel, system::to_shared(std::move(copy)), false);
+    copy.bits = work_required(current->held->context, copy.timestamp,
+        this->system_settings());
+
+    const auto clean = copy.bits != current->bits;
+    send_job(channel, system::to_shared(std::move(copy)), clean);
+}
+
+// Jobs are issued again when minimum difficulty is first allowed (testnet).
+TEMPLATE
+void CLASS::start_easy(const system::chain::context& ctx,
+    uint32_t timestamp) NOEXCEPT
+{
+    BC_ASSERT(this->stranded());
+    using namespace system;
+    using namespace std::placeholders;
+
+    easy_timer_->stop();
+    const auto easy = easy_timestamp(ctx, this->system_settings());
+    if (this->stopped() || !easy || (timestamp >= easy.value()))
+        return;
+
+    const auto wait = floored_subtract(easy.value(), network::unix_time());
+    easy_timer_->start(this->template bind<CLASS>(&CLASS::handle_easy, _1),
+        network::seconds(wait));
+}
+
+TEMPLATE
+void CLASS::handle_easy(const code& ec) NOEXCEPT
+{
+    BC_ASSERT(this->stranded());
+    if (this->stopped() || ec == network::error::operation_canceled)
+        return;
+
+    if (ec)
+    {
+        this->stop(ec);
+        return;
+    }
+
+    for (const auto& entry: channels_)
+        refresh(*entry.second);
 }
 
 // Shares.
@@ -264,9 +308,17 @@ share_outcome CLASS::to_outcome(mining_channel& channel, const job& job,
     const auto limit = add<uint64_t>(network::unix_time(),
         bitcoin.timestamp_limit_seconds);
 
-    ec = out.accept(job.held->context, bitcoin.retargeting_interval());
+    auto ctx = job.held->context;
+    ctx.work_required = work_required(ctx, timestamp, bitcoin);
+    ec = out.accept(ctx, bitcoin.retargeting_interval());
     if (ec)
         return share_outcome::invalid;
+
+    if (timestamp < minimum_timestamp(ctx, bitcoin))
+    {
+        ec = system::error::anachronistic_timestamp;
+        return share_outcome::invalid;
+    }
 
     if (timestamp > limit)
     {

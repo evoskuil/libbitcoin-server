@@ -509,8 +509,9 @@ void protocol_bitcoind_mining::do_template(const code& ec,
     if (ctx.is_enabled(flags::bip341_rule))
         rules.emplace_back(string_t{ "taproot" });
 
-    const auto bits = ctx.work_required;
-    const auto minimum = add1(ctx.median_time_past);
+    const auto minimum = minimum_timestamp(ctx, bitcoin);
+    const auto current = std::max(unix_time(), minimum);
+    const auto bits = work_required(ctx, current, bitcoin);
     const auto subsidy = block::subsidy(height,
         bitcoin.subsidy_interval_blocks, bitcoin.initial_subsidy(),
         bitcoin.forks.bip42);
@@ -542,7 +543,7 @@ void protocol_bitcoind_mining::do_template(const code& ec,
         { "noncerange", string_t{ "00000000ffffffff" } },
         { "sigoplimit", to64(bip141 ? max_fast_sigops : max_block_sigops) },
         { "sizelimit", to64(bip141 ? max_block_weight : max_block_size) },
-        { "curtime", std::max(unix_time(), minimum) },
+        { "curtime", current },
         { "bits", encode_base16(to_big_endian(bits)) },
         { "height", to64(height) }
     };
