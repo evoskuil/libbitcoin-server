@@ -125,6 +125,9 @@ const RETRY_CAP = 60;
 // Seconds between template requests, for changes (time, work) not polled.
 const REFRESH = 30;
 
+// Seconds between polls of the bitcoind chain height, for a new block.
+const POLL = 5;
+
 const SUBSCRIBE = 1;
 const AUTHORIZE = 2;
 const SUGGEST = 3;
@@ -207,6 +210,8 @@ class Miner {
   private socket?: WebSocket;
   // Aborts the http requests of a bitcoind connection.
   private abort?: AbortController;
+  // The last http request of a bitcoind connection, which the next follows.
+  private queue: Promise<unknown> = Promise.resolve();
   private template?: Template;
   // A block has been found on the template, so it is not mined further.
   private solved = false;
@@ -338,38 +343,53 @@ class Miner {
     this.clock();
   }
 
-  // bitcoind templates are long polled over http posts, authorized by basic
-  // authentication of each post.
+  // bitcoind templates are requested over http posts, authorized by basic
+  // authentication of each post. The chain height is polled for a new block,
+  // and the template requested again at an interval. Posts are made one at a
+  // time, so are carried by one connection.
   private connectBitcoind(settings: MinerSettings) {
     const abort = new AbortController();
+    const signal = abort.signal;
     this.abort = abort;
-    void this.longpoll(settings, abort.signal);
+    this.queue = Promise.resolve();
+
+    const unreachable = (error: unknown) => {
+      if (signal.aborted) return;
+      const why = error instanceof Error ? error.message : `Cannot reach ${settings.url}.`;
+      if (this.subscribed) this.lose(why);
+      else this.fail(why);
+    };
+
+    const request = (id: number) =>
+      this.serial(() => this.call(settings, 'getblocktemplate', [{ rules: ['segwit'] }], signal)).then(
+        (message) => {
+          if (!signal.aborted) this.templated(id, message);
+        }
+      );
+
+    // bitcoind "blocks" is the height of the chain top.
+    const poll = () =>
+      this.serial(() => this.call(settings, 'getmininginfo', [], signal)).then((message) => {
+        const value = message.result as { blocks?: unknown } | undefined;
+        const height = this.template?.height;
+        if (typeof value?.blocks === 'number' && height !== undefined && value.blocks + 1 !== height)
+          return request(RENEW);
+        return undefined;
+      });
+
+    request(TEMPLATE).catch(unreachable);
+    let polls = 0;
     this.renewal = setInterval(() => {
-      void this.call(settings, 'getblocktemplate', [{ rules: ['segwit'] }], abort.signal)
-        .then((message) => this.templated(RENEW, message))
-        .catch(() => undefined);
-    }, REFRESH * 1000);
+      polls += 1;
+      (polls % (REFRESH / POLL) === 0 ? request(RENEW) : poll()).catch(unreachable);
+    }, POLL * 1000);
   }
 
-  private async longpoll(settings: MinerSettings, signal: AbortSignal) {
-    let longpollid: string | undefined;
-    while (!signal.aborted) {
-      let message: Record<string, unknown>;
-      try {
-        message = await this.call(settings, 'getblocktemplate', [{ rules: ['segwit'], longpollid }], signal);
-      } catch (error) {
-        if (signal.aborted) return;
-        const why = error instanceof Error ? error.message : `Cannot reach ${settings.url}.`;
-        if (this.subscribed) this.lose(why);
-        else this.fail(why);
-        return;
-      }
-
-      if (signal.aborted) return;
-      const template = this.templated(TEMPLATE, message);
-      if (!template) return;
-      longpollid = template.longpollid;
-    }
+  // Runs the task after any before it.
+  private serial<Type>(task: () => Promise<Type>): Promise<Type> {
+    const next = this.queue.then(task, task);
+    this.queue = next.catch(() => undefined);
+    return next;
   }
 
   private async call(settings: MinerSettings, method: string, params: unknown[], signal: AbortSignal) {
@@ -508,7 +528,7 @@ class Miner {
 
     const signal = this.abort?.signal;
     if (!settings || !signal) return;
-    void this.call(settings, 'submitblock', [hex], signal)
+    void this.serial(() => this.call(settings, 'submitblock', [hex], signal))
       .then((message) => {
         this.submitted(id, message);
       })
