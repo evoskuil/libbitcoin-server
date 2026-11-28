@@ -80,9 +80,10 @@ protected:
     {
     }
 
-    /// Submit the block, its gate held to the outcome (requires strand).
+    /// Submit the block, its gate held to the outcome (requires strand), a
+    /// trusted block organized as a milestone.
     void submit_block(const header_cptr& header, const block_cptr& block,
-        const gate_t::ptr& gate) NOEXCEPT;
+        bool trusted, const gate_t::ptr& gate) NOEXCEPT;
 
     /// The outcome of the submitted block, with its code if rejected.
     virtual void handle_submitted(const system::hash_digest& hash,

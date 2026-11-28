@@ -61,6 +61,18 @@ BCS_API system::data_chunk coinbase_suffix(size_t height, uint64_t value,
     const system::chain::script& payout,
     const system::hash_digest& commitment) NOEXCEPT;
 
+/// Coinbase serialized without witness, following the extranonce, committing
+/// to witnesses where the context enables bip141.
+BCS_API system::data_chunk coinbase_suffix(const system::chain::context& ctx,
+    uint64_t value, const system::chain::script& payout,
+    const system::hash_digest& commitment) NOEXCEPT;
+
+/// Coinbase of prefix, extranonce and suffix, with witness (null reserved)
+/// where the context enables bip141.
+BCS_API system::data_chunk coinbase_wire(const system::chain::context& ctx,
+    const system::data_chunk& prefix, const system::data_chunk& extranonce,
+    const system::data_chunk& suffix) NOEXCEPT;
+
 /// Coinbase of prefix, extranonce and suffix, without witness.
 BCS_API system::data_chunk coinbase_unwitnessed(
     const system::data_chunk& prefix, const system::data_chunk& extranonce,

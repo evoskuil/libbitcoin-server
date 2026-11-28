@@ -4794,6 +4794,8 @@ BC_AUTO_TEST_CASE(bitcoind_rpc__getblocktemplate__empty_pool__next_block_without
     BC_REQUIRE_EQUAL(result.at("mutable").as_array().size(), 3u);
     BC_REQUIRE_EQUAL(result.at("vbrequired").as_int64(), 0);
     BC_REQUIRE(result.at("curtime").as_int64() >= result.at("mintime").as_int64());
+    BC_REQUIRE_EQUAL(result.at("version").as_int64(), 0x20000000);
+    BC_REQUIRE(result.at("vbavailable").as_object().empty());
 }
 
 BC_AUTO_TEST_CASE(bitcoind_rpc__getblocktemplate__before_segwit__csv_rule_and_legacy_limits)
@@ -5416,6 +5418,47 @@ BC_AUTO_TEST_CASE(bitcoind_rpc__testmempoolaccept__closed_pool__not_allowed)
     BC_REQUIRE_MESSAGE(response.is_object() && response.as_object().contains("result"), serialize(response));
     BC_REQUIRE(!response.at("result").at(0).at("allowed").as_bool());
     BC_REQUIRE(response.at("result").at(0).as_object().contains("reject-reason"));
+}
+
+BC_AUTO_TEST_SUITE_END()
+
+// bip54 active
+// ----------------------------------------------------------------------------
+// The bip54 coinbase rule active above genesis.
+
+BC_FIXTURE_TEST_SUITE(bitcoind_bip54_active_tests, bitcoind_bip54_active_setup_fixture)
+
+BC_AUTO_TEST_CASE(bitcoind_rpc__getblocktemplate__bip54_coinbase_undeclared__invalid_parameter)
+{
+    BC_REQUIRE(has_code(rpc("getblocktemplate", R"([{"rules":["segwit"]}])"), -8));
+}
+
+BC_AUTO_TEST_CASE(bitcoind_rpc__getblocktemplate__bip54_coinbase_declared__required_rule)
+{
+    const auto response = rpc("getblocktemplate", R"([{"rules":["segwit","bip54_coinbase"]}])");
+    BC_REQUIRE_MESSAGE(response.is_object() && response.as_object().contains("result"), serialize(response));
+    const auto& rules = response.at("result").at("rules").as_array();
+    BC_REQUIRE_EQUAL(rules.size(), 2u);
+    BC_REQUIRE_EQUAL(as_text(rules.at(0)), "csv");
+    BC_REQUIRE_EQUAL(as_text(rules.at(1)), "!bip54_coinbase");
+}
+
+BC_AUTO_TEST_SUITE_END()
+
+// taproot started
+// ----------------------------------------------------------------------------
+// Taproot signaling started, in periods of two blocks.
+
+BC_FIXTURE_TEST_SUITE(bitcoind_taproot_started_tests, bitcoind_taproot_started_setup_fixture)
+
+BC_AUTO_TEST_CASE(bitcoind_rpc__getblocktemplate__taproot_started__signaled_and_available)
+{
+    const auto response = rpc("getblocktemplate", R"([{"rules":["segwit"]}])");
+    BC_REQUIRE_MESSAGE(response.is_object() && response.as_object().contains("result"), serialize(response));
+    const auto& result = response.at("result");
+    BC_REQUIRE_EQUAL(result.at("version").as_int64(), 0x20000004);
+    BC_REQUIRE_EQUAL(result.at("vbavailable").as_object().size(), 1u);
+    BC_REQUIRE_EQUAL(result.at("vbavailable").at("taproot").as_int64(), 2);
 }
 
 BC_AUTO_TEST_SUITE_END()

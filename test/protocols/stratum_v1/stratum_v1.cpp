@@ -295,7 +295,7 @@ BC_AUTO_TEST_CASE(stratum_v1__mining_notify__first_job__expected)
 {
     const auto job = start_job();
     const auto& params = job.at("params").as_array();
-    const auto version = chain::chain_state::signal_version(config_.bitcoin);
+    const auto version = config_.bitcoin.bip9_version_base;
     const auto suffix = server::coinbase_suffix(10, subsidy, p2kh(0x01));
     BC_REQUIRE(job.at("id").is_null());
     BC_REQUIRE(!job.as_object().contains("jsonrpc"));

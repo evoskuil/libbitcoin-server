@@ -123,6 +123,22 @@ data_chunk coinbase_suffix(size_t height, uint64_t value,
     return out;
 }
 
+data_chunk coinbase_suffix(const context& ctx, uint64_t value,
+    const script& payout, const hash_digest& commitment) NOEXCEPT
+{
+    return ctx.is_enabled(flags::bip141_rule) ?
+        coinbase_suffix(ctx.height, value, payout, commitment) :
+        coinbase_suffix(ctx.height, value, payout);
+}
+
+data_chunk coinbase_wire(const context& ctx, const data_chunk& prefix,
+    const data_chunk& extranonce, const data_chunk& suffix) NOEXCEPT
+{
+    return ctx.is_enabled(flags::bip141_rule) ?
+        coinbase_witnessed(prefix, extranonce, suffix) :
+        coinbase_unwitnessed(prefix, extranonce, suffix);
+}
+
 data_chunk coinbase_unwitnessed(const data_chunk& prefix,
     const data_chunk& extranonce, const data_chunk& suffix) NOEXCEPT
 {

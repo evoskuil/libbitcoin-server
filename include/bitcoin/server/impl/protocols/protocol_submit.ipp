@@ -64,7 +64,7 @@ void CLASS::stopping(const code& ec) NOEXCEPT
 
 TEMPLATE
 void CLASS::submit_block(const header_cptr& header, const block_cptr& block,
-    const gate_t::ptr& gate) NOEXCEPT
+    bool trusted, const gate_t::ptr& gate) NOEXCEPT
 {
     BC_ASSERT(this->stranded());
     using namespace std::placeholders;
@@ -76,7 +76,7 @@ void CLASS::submit_block(const header_cptr& header, const block_cptr& block,
         return;
     }
 
-    this->organize_submitted(header,
+    this->organize_submitted(header, trusted,
         this->template bind<CLASS>(&CLASS::handle_organize_block,
             _1, _2, block, gate));
 }

@@ -174,7 +174,6 @@ void CLASS::do_template(const code& ec,
         bitcoin.forks.bip42);
 
     const auto value = ceilinged_add(subsidy, held->fees);
-    const auto bip141 = ctx.is_enabled(flags::bip141_rule);
     const auto prefix = coinbase_prefix(height, options_.coinbase_tag,
         extranonce_size());
 
@@ -185,10 +184,8 @@ void CLASS::do_template(const code& ec,
         if (current && current->held == held)
             continue;
 
-        const auto& payout = channel.payout();
-        const auto suffix = bip141 ?
-            coinbase_suffix(height, value, payout, held->commitment) :
-            coinbase_suffix(height, value, payout);
+        const auto suffix = coinbase_suffix(ctx, value, channel.payout(),
+            held->commitment);
 
         const auto clean = !current || current->previous != held->previous;
         send_job(channel, to_shared(job
@@ -197,7 +194,7 @@ void CLASS::do_template(const code& ec,
             prefix,
             suffix,
             held->previous,
-            chain_state::signal_version(bitcoin),
+            ctx.version,
             bits,
             timestamp,
             channel.difficulty()
@@ -517,11 +514,8 @@ void CLASS::submit_mined(const mining_channel& channel,
 
     const auto& query = this->archive();
     const auto& links = job.held->links;
-    const auto& ctx = job.held->context;
-    const auto bip141 = ctx.is_enabled(chain::flags::bip141_rule);
-    const auto coinbase = bip141 ?
-        coinbase_witnessed(job.prefix, extranonce, job.suffix) :
-        coinbase_unwitnessed(job.prefix, extranonce, job.suffix);
+    const auto coinbase = coinbase_wire(job.held->context, job.prefix,
+        extranonce, job.suffix);
 
     const auto hash = header.hash();
     mined_.emplace(hash, std::pair{ job.held->context.height,
@@ -554,7 +548,8 @@ void CLASS::submit_mined(const mining_channel& channel,
         return;
     }
 
-    this->submit_block(to_shared<chain::header>(header), block, this->gate());
+    this->submit_block(to_shared<chain::header>(header), block,
+        !options_.check_blocks, this->gate());
 }
 
 // The block is the template with the miner's valid header, so a block that

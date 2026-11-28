@@ -89,7 +89,7 @@ object_t block_stats(const chain::block& block, size_t height,
         uint64_t tx_total_output{};
         for (const auto& out: *tx->outputs_ptr())
         {
-            tx_total_output += out->value();
+            tx_total_output = ceilinged_add(tx_total_output, out->value());
 
             // Genesis coinbase not added to utxo set, nor unspendable outputs.
             if (is_zero(height) || out->script().is_unspendable())
@@ -103,7 +103,7 @@ object_t block_stats(const chain::block& block, size_t height,
             continue;
 
         inputs += tx->inputs_ptr()->size();
-        total_output += tx_total_output;
+        total_output = ceilinged_add(total_output, tx_total_output);
 
         const uint64_t tx_size = tx->serialized_size(true);
         max_tx_size = std::max(max_tx_size, tx_size);
@@ -123,16 +123,17 @@ object_t block_stats(const chain::block& block, size_t height,
 
         uint64_t tx_total_input{};
         for (const auto& in: *tx->inputs_ptr())
-            tx_total_input += in->prevout->value();
+            tx_total_input = ceilinged_add(tx_total_input, in->prevout->value());
 
         const auto fee = floored_subtract(tx_total_input, tx_total_output);
         fees.push_back(fee);
         max_fee = std::max(max_fee, fee);
         min_fee = std::min(min_fee, fee);
-        total_fee += fee;
+        total_fee = ceilinged_add(total_fee, fee);
 
         // The fee rate is satoshis per virtual byte.
-        const auto weighted = chain::light_weight_factor * fee;
+        const auto weighted = ceilinged_multiply<uint64_t>(
+            chain::light_weight_factor, fee);
         const auto rate = is_zero(weight) ? zero : weighted / weight;
         rates.emplace_back(rate, weight);
         max_fee_rate = std::max(max_fee_rate, rate);
@@ -147,7 +148,8 @@ object_t block_stats(const chain::block& block, size_t height,
     const auto paying = sub1(txs.size());
 
     const auto weightless = is_zero(total_weight);
-    const auto weighted_fee = chain::light_weight_factor * total_fee;
+    const auto weighted_fee = ceilinged_multiply<uint64_t>(
+        chain::light_weight_factor, total_fee);
     const auto average_rate = weightless ? zero : weighted_fee / total_weight;
 
     return object_t

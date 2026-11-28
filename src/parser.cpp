@@ -1786,6 +1786,11 @@ options_metadata parser::load_settings() THROWS
         "Enable utxo set queries, disabling connection timeouts, defaults to {}."
     )
     (
+        "bitcoind.trust_blocks",
+        setting<bool>(&configured.server.bitcoind.trust_blocks),
+        "Organize submitted blocks as a milestone, without validation, defaults to {}."
+    )
+    (
         "bitcoind.maximum_history",
         setting<uint32_t>(&configured.server.bitcoind.maximum_history),
         "The maximum number of address history entries, defaults to {}."
@@ -1973,6 +1978,11 @@ options_metadata parser::load_settings() THROWS
         "btcd.enable_utxo",
         setting<bool>(&configured.server.btcd.enable_utxo),
         "Enable utxo set queries, disabling connection timeouts, defaults to {}."
+    )
+    (
+        "btcd.trust_blocks",
+        setting<bool>(&configured.server.btcd.trust_blocks),
+        "Organize submitted blocks as a milestone, without validation, defaults to {}."
     )
 
     /* [electrum] */
@@ -2595,6 +2605,11 @@ options_metadata parser::load_settings() THROWS
         setting<uint32_t>(&configured.server.stratum_v1.authorize_timeout_seconds),
         "The seconds to subscribe and authorize a channel, defaults to {} (0 is unlimited)."
     )
+    (
+        "stratum_v1.check_blocks",
+        setting<bool>(&configured.server.stratum_v1.check_blocks),
+        "Validate found blocks, otherwise organized as a milestone, defaults to {}."
+    )
 
     /* [stratum_v2] */
     (
@@ -2771,6 +2786,11 @@ options_metadata parser::load_settings() THROWS
         "stratum_v2.authorize_timeout_seconds",
         setting<uint32_t>(&configured.server.stratum_v2.authorize_timeout_seconds),
         "The seconds to set up a connection and to open a channel, defaults to {} (0 is unlimited)."
+    )
+    (
+        "stratum_v2.check_blocks",
+        setting<bool>(&configured.server.stratum_v2.check_blocks),
+        "Validate found blocks, otherwise organized as a milestone, defaults to {}."
     )
     /* [node] */
     (

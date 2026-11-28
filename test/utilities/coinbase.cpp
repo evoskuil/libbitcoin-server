@@ -138,6 +138,41 @@ BC_AUTO_TEST_CASE(coinbase__coinbase_suffix__uncommitted__valid_coinbase_of_one_
     BC_REQUIRE(!tx.inputs_ptr()->front()->is_final());
 }
 
+BC_AUTO_TEST_CASE(coinbase__coinbase_suffix__bip141_context__committed)
+{
+    context ctx{};
+    ctx.flags = flags::bip141_rule;
+    ctx.height = 500'000;
+    const auto commitment = base16_hash("0000000000000000000000000000000000000000000000000000000000000042");
+    BC_REQUIRE(coinbase_suffix(ctx, 50, payout_script(0x01), commitment) == coinbase_suffix(500'000, 50, payout_script(0x01), commitment));
+}
+
+BC_AUTO_TEST_CASE(coinbase__coinbase_suffix__unenabled_context__uncommitted)
+{
+    context ctx{};
+    ctx.height = 500'000;
+    BC_REQUIRE(coinbase_suffix(ctx, 50, payout_script(0x01), null_hash) == coinbase_suffix(500'000, 50, payout_script(0x01)));
+}
+
+BC_AUTO_TEST_CASE(coinbase__coinbase_wire__bip141_context__witnessed)
+{
+    context ctx{};
+    ctx.flags = flags::bip141_rule;
+    const data_chunk extranonce(8, 0x42);
+    const auto prefix = coinbase_prefix(500'000, "", 8);
+    const auto suffix = coinbase_suffix(500'000, 50, payout_script(0x01), null_hash);
+    BC_REQUIRE(coinbase_wire(ctx, prefix, extranonce, suffix) == coinbase_witnessed(prefix, extranonce, suffix));
+}
+
+BC_AUTO_TEST_CASE(coinbase__coinbase_wire__unenabled_context__unwitnessed)
+{
+    const context ctx{};
+    const data_chunk extranonce(8, 0x42);
+    const auto prefix = coinbase_prefix(500'000, "", 8);
+    const auto suffix = coinbase_suffix(500'000, 50, payout_script(0x01));
+    BC_REQUIRE(coinbase_wire(ctx, prefix, extranonce, suffix) == coinbase_unwitnessed(prefix, extranonce, suffix));
+}
+
 BC_AUTO_TEST_CASE(coinbase__coinbase_witnessed__valid__same_txid_null_reserved)
 {
     const data_chunk extranonce(8, 0x42);

@@ -235,6 +235,7 @@ BC_AUTO_TEST_CASE(server__bitcoind_server__defaults__expected)
     BC_REQUIRE_EQUAL(server.protocol_minimum, 300000u);
     BC_REQUIRE_EQUAL(server.protocol_maximum, 320000u);
     BC_REQUIRE(!server.enable_utxo);
+    BC_REQUIRE(!server.trust_blocks);
     BC_REQUIRE_EQUAL(server.maximum_history, 1'000'000u);
 }
 
@@ -754,6 +755,7 @@ BC_AUTO_TEST_CASE(server__stratum_v1_server__defaults__expected)
     BC_REQUIRE_EQUAL(server.start_difficulty, 0.0);
     BC_REQUIRE_EQUAL(server.share_interval_seconds, 10u);
     BC_REQUIRE_EQUAL(server.authorize_timeout_seconds, 15u);
+    BC_REQUIRE(!server.check_blocks);
 
     // tcp_server
     BC_REQUIRE_EQUAL(server.name, "stratum_v1");
@@ -791,6 +793,7 @@ BC_AUTO_TEST_CASE(server__stratum_v2_server__defaults__expected)
     BC_REQUIRE_EQUAL(server.start_difficulty, 0.0);
     BC_REQUIRE_EQUAL(server.share_interval_seconds, 10u);
     BC_REQUIRE_EQUAL(server.authorize_timeout_seconds, 15u);
+    BC_REQUIRE(!server.check_blocks);
     BC_REQUIRE_EQUAL(server.noise_validity_days, 1u);
     BC_REQUIRE(!server.noise);
 

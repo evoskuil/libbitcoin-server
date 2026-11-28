@@ -262,6 +262,9 @@ public:
 
         /// Seconds to authorize a connection, zero is unlimited.
         uint32_t authorize_timeout_seconds{ 15 };
+
+        /// Validate found blocks, otherwise organized as a milestone.
+        bool check_blocks{ false };
     };
 
     /// Stratum v1 is served over tcp/s (json-rpc downgrade), http/s and ws/s,
@@ -452,6 +455,9 @@ public:
 
         /// Enable utxo set queries, which disables connection timeouts.
         bool enable_utxo{ false };
+
+        /// Organize submitted blocks as a milestone, without validation.
+        bool trust_blocks{ false };
 
         /// Maximum number of address history entries upon one index walk.
         uint32_t maximum_history{ 1'000'000 };

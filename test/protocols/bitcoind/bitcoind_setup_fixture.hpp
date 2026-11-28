@@ -392,6 +392,45 @@ struct bitcoind_csv_unconfirmed_setup_fixture
     }
 };
 
+// Configured with the bip54 coinbase rule active above genesis.
+struct bitcoind_bip54_active_setup_fixture
+  : bitcoind_setup_fixture
+{
+    inline bitcoind_bip54_active_setup_fixture()
+      : bitcoind_setup_fixture([](test::query_t& query)
+        {
+            return test::setup_broadcast_store(query);
+        }, [](configuration& config)
+        {
+            using deployment = system::chain::chain_state::deployment;
+            config.node.currency_window_minutes = 0;
+            config.bitcoin.forks.bip54_coinbase = true;
+            config.bitcoin.bip54_coinbase_deployment.start =
+                deployment::always_active;
+        }, true)
+    {
+    }
+};
+
+// Configured with taproot signaling started, in periods of two blocks.
+struct bitcoind_taproot_started_setup_fixture
+  : bitcoind_setup_fixture
+{
+    inline bitcoind_taproot_started_setup_fixture()
+      : bitcoind_setup_fixture([](test::query_t& query)
+        {
+            return test::setup_broadcast_store(query);
+        }, [](configuration& config)
+        {
+            config.node.currency_window_minutes = 0;
+            config.bitcoin.bip9_activation_period = 2;
+            config.bitcoin.bip9_bit2_deployment.start = 1;
+            config.bitcoin.bip9_bit2_deployment.timeout = max_uint32;
+        }, true)
+    {
+    }
+};
+
 // Configured with taproot flagged in the top header context.
 struct bitcoind_taproot_active_setup_fixture
   : bitcoind_setup_fixture

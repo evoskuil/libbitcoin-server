@@ -140,7 +140,7 @@ network::rpc::object_t scan_result(
             { "confirmations", to64(add1(floored_subtract(top, coin.height))) }
         });
 
-        amount += coin.out.value();
+        amount = ceilinged_add(amount, coin.out.value());
     }
 
     const auto best = query.to_confirmed(top);

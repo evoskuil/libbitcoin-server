@@ -42,6 +42,59 @@ BC_PUSH_WARNING(NO_THROW_IN_NOEXCEPT)
 BC_PUSH_WARNING(SMART_PTR_NOT_NEEDED)
 BC_PUSH_WARNING(NO_VALUE_OR_CONST_REF_SHARED_PTR)
 
+// bitcoind names the deployments of bip9 bits zero to two csv, segwit and
+// taproot, and marks as required (!) a rule a client cannot ignore.
+struct named_deployment
+{
+    std::string_view name;
+    const chain::chain_state::deployment& deployment;
+    bool required;
+};
+
+using named_deployments = std::array<named_deployment, 8>;
+
+static named_deployments to_named(const system::settings& bitcoin) NOEXCEPT
+{
+    return
+    {{
+        { "csv", bitcoin.bip9_bit0_deployment, false },
+        { "segwit", bitcoin.bip9_bit1_deployment, true },
+        { "taproot", bitcoin.bip9_bit2_deployment, false },
+        { "bip54_timewarp", bitcoin.bip54_timewarp_deployment, true },
+        { "bip54_timespan", bitcoin.bip54_timespan_deployment, true },
+        { "bip54_sigops", bitcoin.bip54_sigops_deployment, true },
+        { "bip54_txsize", bitcoin.bip54_txsize_deployment, true },
+        { "bip54_coinbase", bitcoin.bip54_coinbase_deployment, true }
+    }};
+}
+
+// The flags of the deployments named by the rules of the request.
+static uint32_t to_declared(const object_t& request,
+    const named_deployments& named) NOEXCEPT
+{
+    uint32_t declared{};
+    const auto rules = request.find("rules");
+    if (rules == request.end())
+        return declared;
+
+    const auto names = std::get_if<array_t>(&rules->second.value());
+    if (is_null(names))
+        return declared;
+
+    for (const auto& rule: *names)
+    {
+        const auto name = std::get_if<string_t>(&rule.value());
+        if (is_null(name))
+            continue;
+
+        for (const auto& item: named)
+            if (*name == item.name)
+                declared |= item.deployment.flags;
+    }
+
+    return declared;
+}
+
 // Start.
 // ----------------------------------------------------------------------------
 
@@ -260,7 +313,7 @@ void protocol_bitcoind_mining::handle_submit_block(const code& ec,
         return;
     }
 
-    submit_block(header, block, gate());
+    submit_block(header, block, options().trust_blocks, gate());
 }
 
 // bip22: null when accepted, otherwise duplicate, inconclusive or reject token.
@@ -384,22 +437,9 @@ void protocol_bitcoind_mining::handle_get_block_template(const code& ec,
         }
     }
 
-    auto segwit = false;
-    const auto rules = template_request.find("rules");
-    if (rules != template_request.end())
-    {
-        const auto names = std::get_if<array_t>(&rules->second.value());
-        if (!is_null(names))
-        {
-            segwit = std::ranges::any_of(*names, [](const auto& rule) NOEXCEPT
-            {
-                const auto name = std::get_if<string_t>(&rule.value());
-                return !is_null(name) && *name == "segwit";
-            });
-        }
-    }
-
-    if (!segwit)
+    const auto& bitcoin = system_settings();
+    const auto declared = to_declared(template_request, to_named(bitcoin));
+    if (!to_bool(declared & bitcoin.bip9_bit1_deployment.flags))
     {
         send_error(error::bitcoind::invalid_parameter);
         return;
@@ -410,25 +450,27 @@ void protocol_bitcoind_mining::handle_get_block_template(const code& ec,
     if (longpollid != template_request.end() &&
         is_current(sequence, longpollid->second))
     {
-        arm_longpoll(sequence);
+        arm_longpoll(sequence, declared);
         return;
     }
 
-    get_template(BIND(handle_template, _1, _2, gate()));
+    get_template(BIND(handle_template, _1, _2, declared, gate()));
 }
 
 void protocol_bitcoind_mining::handle_template(const code& ec,
-    const node::block_template::cptr& held, const gate_t::ptr& gate) NOEXCEPT
+    const node::block_template::cptr& held, uint32_t declared,
+    const gate_t::ptr& gate) NOEXCEPT
 {
     if (stopped())
         return;
 
-    POST(do_template, ec, held, gate);
+    POST(do_template, ec, held, declared, gate);
 }
 
 // A template not over the confirmed top is requested again.
 void protocol_bitcoind_mining::do_template(const code& ec,
-    const node::block_template::cptr& held, const gate_t::ptr& gate) NOEXCEPT
+    const node::block_template::cptr& held, uint32_t declared,
+    const gate_t::ptr& gate) NOEXCEPT
 {
     BC_ASSERT(stranded());
     using namespace chain;
@@ -451,7 +493,7 @@ void protocol_bitcoind_mining::do_template(const code& ec,
     const auto& query = archive();
     if (held->previous != query.get_top_confirmed_hash())
     {
-        get_template(BIND(handle_template, _1, _2, gate));
+        get_template(BIND(handle_template, _1, _2, declared, gate));
         return;
     }
 
@@ -497,17 +539,29 @@ void protocol_bitcoind_mining::do_template(const code& ec,
         });
     }
 
-    // bitcoind names bip9 bit zero rules csv, and marks as required (!) a rule
-    // a client cannot ignore.
+    // A deployment is a rule once active, and available while signaled.
     array_t rules{};
-    if (ctx.is_enabled(flags::bip68_rule))
-        rules.emplace_back(string_t{ "csv" });
+    object_t available{};
+    for (const auto& item: to_named(bitcoin))
+    {
+        const string_t name{ item.name };
+        const auto& deployment = item.deployment;
+        if (to_bool(ctx.flags & deployment.flags))
+        {
+            if (item.required && !to_bool(declared & deployment.flags))
+            {
+                send_error(error::bitcoind::invalid_parameter);
+                return;
+            }
 
-    if (bip141)
-        rules.emplace_back(string_t{ "!segwit" });
-
-    if (ctx.is_enabled(flags::bip341_rule))
-        rules.emplace_back(string_t{ "taproot" });
+            rules.emplace_back(item.required ? "!" + name : name);
+        }
+        else if (chain_state::is_signal(ctx.version,
+            bitcoin.bip9_version_base, deployment.bit))
+        {
+            available.emplace(name, deployment.bit);
+        }
+    }
 
     const auto minimum = minimum_timestamp(ctx, bitcoin);
     const auto current = std::max(unix_time(), minimum);
@@ -522,9 +576,9 @@ void protocol_bitcoind_mining::do_template(const code& ec,
     object_t result
     {
         { "capabilities", array_t{} },
-        { "version", chain_state::signal_version(bitcoin) },
+        { "version", ctx.version },
         { "rules", std::move(rules) },
-        { "vbavailable", object_t{} },
+        { "vbavailable", std::move(available) },
         { "vbrequired", to64(zero) },
         { "previousblockhash", previous },
         { "transactions", std::move(transactions) },
@@ -605,11 +659,15 @@ bool protocol_bitcoind_mining::is_current(uint64_t& sequence,
         sequence == template_generation();
 }
 
-void protocol_bitcoind_mining::arm_longpoll(uint64_t sequence) NOEXCEPT
+void protocol_bitcoind_mining::arm_longpoll(uint64_t sequence,
+    uint32_t declared) NOEXCEPT
 {
     BC_ASSERT(stranded());
 
-    const auto poll = emplace_shared<longpoll>(longpoll{ sequence, gate() });
+    const auto poll = emplace_shared<longpoll>(longpoll
+    {
+        sequence, declared, gate()
+    });
     const auto race = emplace_shared<longpoll_race>(
         BIND(handle_longpoll_complete, _1, poll));
 
@@ -694,7 +752,7 @@ void protocol_bitcoind_mining::do_longpoll_complete(const code& ec,
     if (ec || stopped())
         return;
 
-    get_template(BIND(handle_template, _1, _2, poll->gate));
+    get_template(BIND(handle_template, _1, _2, poll->declared, poll->gate));
 }
 
 bool protocol_bitcoind_mining::longpoll_done(

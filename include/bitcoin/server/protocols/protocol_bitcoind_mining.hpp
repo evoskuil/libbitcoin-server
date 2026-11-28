@@ -90,6 +90,7 @@ private:
         typedef std::shared_ptr<longpoll> ptr;
 
         uint64_t sequence;
+        uint32_t declared{};
         gate_t::ptr gate{};
         network::proxy::object_key stop{};
         node::object_key events{};
@@ -110,15 +111,15 @@ private:
 
     // Template completions (bounced to the channel strand).
     void handle_template(const code& ec,
-        const node::block_template::cptr& held,
+        const node::block_template::cptr& held, uint32_t declared,
         const gate_t::ptr& gate) NOEXCEPT;
     void do_template(const code& ec, const node::block_template::cptr& held,
-        const gate_t::ptr& gate) NOEXCEPT;
+        uint32_t declared, const gate_t::ptr& gate) NOEXCEPT;
 
     // Long polls.
     bool is_current(uint64_t& sequence,
         const network::rpc::value_t& longpollid) const NOEXCEPT;
-    void arm_longpoll(uint64_t sequence) NOEXCEPT;
+    void arm_longpoll(uint64_t sequence, uint32_t declared) NOEXCEPT;
     bool handle_longpoll_event(const code& ec, node::event_value value,
         const longpoll::ptr& poll, const longpoll_race::ptr& race) NOEXCEPT;
     void handle_longpoll_subscribed(const code& ec, node::object_key key,
